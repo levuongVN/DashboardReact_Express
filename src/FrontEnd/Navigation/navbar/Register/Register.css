@@ -1,0 +1,22 @@
+.bg-img{
+    background-image: url('https://img.freepik.com/free-vector/laptop-with-program-code-isometric-icon-software-development-programming-applications-dark-neon_39422-971.jpg?t=st=1733908956~exp=1733912556~hmac=5a803623f84cf4c7283b23c25e496ff73294f81c9151edc5904c1ffc1556b202&w=1800');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+.bg-blur{
+    backdrop-filter: blur(10px) !important;
+    background-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0px 0px 20px rgb(0, 0, 0);
+}
+.terms-conditions, .login{
+    color: #14dfb4;
+}
+.login:hover{
+    color: #14dfb4;
+}
+@media (min-width: 992px) {
+    .bg-blur {
+        border-radius: 5%;
+    }
+}

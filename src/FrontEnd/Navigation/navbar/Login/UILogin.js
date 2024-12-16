@@ -27,7 +27,7 @@ export default function UILogin({setUserName}) {
         const response = await fetchData();
         let errCount = false;
         response.data.forEach(element => {
-            if (element.email === data_email_name && element.password === data_password) {
+            if ((element.email === data_email_name || element.phone === data_email_name) && element.password === data_password) {
                 setUserName(element.name)
                 // console.log('Login success');
                 seterrorMessageEmailPhone('');
