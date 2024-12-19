@@ -1,21 +1,13 @@
 import React from 'react';
 import { useState } from 'react';
 import './UILogin.css';
-import { Link,useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button, TextField } from "@mui/material";
 import axios from 'axios';
 import debounce from 'lodash/debounce'; // Thu vien co san ham debounce
-async function fetchData() {
-    try {
-        const response = await axios.get('http://localhost:3001/');
-        // console.log(response.data);
-        return response.data;
-    } catch (error) {
-        console.error(error);
-    }
-}
+
 // handleLogin()
-export default function UILogin({setUserName}) {
+export default function UILogin({UserName}) {
     const navigate = useNavigate();
     // eslint-disable-next-line no-unused-vars
     const [data_email_name, setdata_email_name] = useState('');
@@ -23,43 +15,73 @@ export default function UILogin({setUserName}) {
     const [errorMessageEmailPhone, seterrorMessageEmailPhone] = useState('');
     const [errorMessagePassword, seterrorMessagePassword] = useState('');
 
+    // Hàm chuyển đổi số điện thoại quốc tế về số local
+    const convertToLocalPhone = (phone) => {
+        if (!phone) return '';  // Thêm kiểm tra phone tồn tại
+        
+        const countryPrefixes = {
+            '+84': '0',    // Vietnam
+            '+1': '',      // US/Canada
+            '+44': '0',    // UK
+            '+86': '0',    // China
+            '+81': '0',    // Japan
+            '+82': '0',    // South Korea
+            '+33': '0',    // France
+            '+49': '0',    // Germany
+            '+61': '0',    // Australia
+        };
+
+        // Kiểm tra và chuyển đổi
+        for (let [prefix, localPrefix] of Object.entries(countryPrefixes)) {
+            if (phone.startsWith(prefix)) {
+                return localPrefix + phone.substring(prefix.length);
+            }
+        }
+        
+        return phone;
+    };
+
     const handleLogin = async () => {
-        const response = await fetchData();
-        let errCount = false;
-        response.data.forEach(element => {
-            if ((element.email === data_email_name || element.phone === data_email_name) && element.password === data_password) {
-                setUserName(element.name)
-                // console.log('Login success');
-                seterrorMessageEmailPhone('');
-                seterrorMessagePassword('');
-                errCount = true;
-                navigate('/');
-                // console.log(data_email_name + " " + data_password)
-                return;
-            } else if (data_email_name.length === 0 || data_password.length === 0) {
+        try {
+            if (!data_email_name || !data_password) {
                 seterrorMessageEmailPhone('Email or phone cannot be empty');
                 seterrorMessagePassword('Password cannot be empty');
                 return;
-            } else {
-                errCount = false;
-                // console.log('Login failed');
             }
-        });
-        if (!errCount) {
-            seterrorMessageEmailPhone('Email or phone are incorrect');
-            seterrorMessagePassword('Email or phone are incorrect');
-            return;
+
+            // Gọi API login
+            const response = await axios.post('http://localhost:3001/login', {
+                email: data_email_name,
+                password: data_password
+            }, {
+                withCredentials: true // Quan trọng để nhận cookies từ server
+            });
+
+            if (response.data.success ===true) {
+                UserName(response.data.user.name);
+                seterrorMessageEmailPhone('');
+                seterrorMessagePassword('');
+                navigate('/');
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            seterrorMessageEmailPhone('Email/Phone or password is incorrect');
+            seterrorMessagePassword('Email/Phone or password is incorrect');
         }
-    }
+    };
     const ValidationEmailPhone = (value) => {
-        // Regex check email or phone
-        const regex = /^((\+?[1-9]\d{0,2}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{3,4}|[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$/
-        if (!regex.test(value)) {
-            seterrorMessageEmailPhone('Invalid email or phone');
-            return false;
-        } else {
+        // Regex cho email
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        
+        // Regex cho số điện thoại quốc tế
+        const phoneRegex = /^\+?(?:[0-9] ?){6,14}[0-9]$/;
+        
+        if (emailRegex.test(value) || phoneRegex.test(value)) {
             seterrorMessageEmailPhone('');
             return true;
+        } else {
+            seterrorMessageEmailPhone('Invalid email or phone');
+            return false;
         }
     }
     const ValidationPasswords = (value) => {

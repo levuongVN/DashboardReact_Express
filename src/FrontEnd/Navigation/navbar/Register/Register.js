@@ -6,8 +6,10 @@ import debounce from 'lodash/debounce';
 import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useNavigate } from 'react-router-dom'; 
 
 export default function Register() {
+    const navigate = useNavigate();
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -27,10 +29,11 @@ export default function Register() {
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const fetchData = async () => {
+
+    const fetchPostData = async () => {
         try {
-            const response = await axios.post('http://localhost:3001/', formData);
-            console.log(response.data);
+            const response = await axios.post('http://localhost:3001/users', formData);
+            console.log('Success response:', response.data);
             if (response.data.success) {
                 toast.success('Register success');
                 setFormData({
@@ -41,12 +44,37 @@ export default function Register() {
                     "Confirm Password": '',
                     terms: true
                 });
-            } else {
-                toast.error('Register failed');
+                navigate('/Login');
             }
         } catch (error) {
-            console.error(error);
-            toast.error('Registration failed: ' + error.message);
+            // Log ra toàn bộ error object
+            console.log('Full error object:', error);
+            
+            // Log ra response từ server
+            if (error.response) {
+                // console.log('Server response:', {
+                //     status: error.response.status,
+                //     data: error.response.data
+                // });
+                
+                // Cập nhật trạng thái lỗi cho trường tương ứng
+                if (error.response.data.message.includes('Email')) {
+                    // Nếu message bên server mà tồn tại sẽ trả về
+                    setErrors(prev => ({
+                        ...prev,
+                        email: error.response.data.message
+                    }));
+                } else if (error.response.data.message.includes('Phone')) {
+                    setErrors(prev => ({
+                        ...prev,
+                        phone: error.response.data.message
+                    }));
+                }
+            } else {
+                toast.error('Registration failed: ' + error.message);
+            }
+        } finally {
+            setIsSubmitting(false);
         }
     };
     const Validation = (name, value) => {
@@ -182,11 +210,10 @@ export default function Register() {
         }, 4000);
 
         // Sử dụng biến cục bộ để kiểm tra form validity
-        const isFormValid = !hasErrors && !hasEmptyFields;
         
         // Chỉ gọi fetchData nếu form hợp lệ
-        if (isFormValid) {
-            fetchData();
+        if (!hasErrors && !hasEmptyFields) {
+            fetchPostData();    
         }
     };
     return (
