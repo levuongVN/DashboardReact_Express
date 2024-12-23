@@ -48,10 +48,10 @@ export default function UILogin({UserName}) {
                 seterrorMessagePassword('Password cannot be empty');
                 return;
             }
-
+            console.log(convertToLocalPhone(data_email_name));
             // Gọi API login
             const response = await axios.post('http://localhost:3001/login', {
-                email: data_email_name,
+                email: convertToLocalPhone(data_email_name),
                 password: data_password
             }, {
                 withCredentials: true // Quan trọng để nhận cookies từ server

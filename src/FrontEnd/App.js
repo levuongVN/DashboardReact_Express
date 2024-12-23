@@ -2,6 +2,7 @@
 import Navbars from './Navigation/navbar/NavigationBars';
 import UILogin from './Navigation/navbar/Login/UILogin';
 import Register from './Navigation/navbar/Register/Register';
+import SettingUser from './Navigation/navbar/SettingUser/set';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
@@ -25,10 +26,8 @@ function App() {
         console.error('Auth check error:', error);
       }
     };
-
     checkAuth();
   }, []);
-
   return (
     <div className="App bg-dark">
       <BrowserRouter>
@@ -36,6 +35,7 @@ function App() {
           <Route path="/" element={<Navbars userName={UserNames} />} />
           <Route path="/Login" element={<UILogin UserName={setUserNames} />} />
           <Route path="/Register" element={<Register />} />
+          <Route path="/Setting" element={<SettingUser />} />
         </Routes>
       </BrowserRouter>
     </div>

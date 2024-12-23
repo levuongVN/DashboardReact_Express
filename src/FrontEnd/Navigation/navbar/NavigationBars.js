@@ -3,6 +3,7 @@ import { Bars3Icon, BellIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import './custom.css';
+import { useState,useEffect } from 'react';
 
 const navigation = [
     { name: 'Dashboard', href: '#', current: true },
@@ -17,6 +18,24 @@ function classNames(...classes) {
 }
 
 export default function Navbar({ userName }) {
+    const [imageAvt, setImageAvt] = useState(null);
+    useEffect(()=>{
+        const fetchImg = async ()=>{
+            try {
+                const response = await axios.get('http://localhost:3001/check-auth', {
+                    withCredentials: true
+                });
+                if (response.data.success) {
+                    setImageAvt(response.data.user.ImgAvt);
+                }
+            } catch (error) {
+                console.error('Get Image Avt error:', error);
+            }
+        }
+        fetchImg();
+    },[]);
+
+    // console.log(imageAvt);
     return (
         <Disclosure as="nav" className="bg-gray-800">
             <div className="px-8">
@@ -75,7 +94,7 @@ export default function Navbar({ userName }) {
                                     <span className="sr-only">Open user menu</span>
                                     <img
                                         alt=""
-                                        src={userName ? "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" : "https://i.pinimg.com/736x/f0/4e/7c/f04e7c4d2e702e9b99be2218c483c9d2.jpg"}
+                                        src={`${userName? imageAvt :"https://i.pinimg.com/474x/75/98/a2/7598a2291f7a6c6a220ffb010dd3384e.jpg" }`}
                                         className="size-10 rounded-full"
                                     />
                                     {!userName && <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white"></span>}

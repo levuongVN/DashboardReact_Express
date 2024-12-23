@@ -45,7 +45,9 @@ app.get('/check-auth', (req, res) => {
             success: true,
             user: {
                 name: userData.name,
-                email: userData.email
+                email: userData.email,
+                ImgAvt: userData.ImgAvt,
+                //...
             }
         });
     } catch (error) {
@@ -80,20 +82,14 @@ app.post('/login', async (req, res) => {
     try {
         const pool = await poolPromise;
         const { email, password } = req.body;
- // Lấy dữ liệu từ bên login, sử dụng destructing cho đỡ khai báo nhiều req
 
-        const resultSQL = await pool.request()
-            .input('email', email) // thiết lập đầu vào là email người dùng nhập
-// ở đây hiểu đơn giản nếu đầu vào mà không khớp với truy vấn sẽ trả về là undefind
-            .query('SELECT * FROM Users WHERE Email = @email');
+        const result = await pool.request()
+            .input('email', email)
+            .input('password', password)
+            .query('SELECT * FROM Users WHERE Email = @email OR Phone = @email');
 
-        const user = resultSQL.recordset[0]; 
-        /* Lấy duy nhất một người dùng
-         do truy vấn email là duy nhất vậy nên chỉ lấy ở chỉ số 0
-         và đây là phương thức có sẵn trong mssql, hiểu nôm na là cú pháp ấy
-         */
+        const user = result.recordset[0];
 
-        
         if (!user || user.pass_word !== password) {
             return res.status(401).json({
                 success: false,
@@ -104,12 +100,13 @@ app.post('/login', async (req, res) => {
         res.cookie('user', JSON.stringify({
             name: user.UserName,
             email: user.Email,
-            phone: user.Phone
+            phone: user.Phone,
+            ImgAvt: user.ImgAvt
         }), {
-            maxAge: 24 * 60 * 60 * 1000, // 1 ngày cookies tồn tại
-            httpOnly: true, // Cookie chỉ có thể được truy cập bởi server
-            secure: process.env.NODE_ENV === 'production', // Chỉ gửi qua HTTPS trong production
-            sameSite: 'strict' // Bảo vệ CSRF
+            maxAge: 24 * 60 * 60 * 1000,
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict'
         });
 
         res.json({
@@ -117,7 +114,8 @@ app.post('/login', async (req, res) => {
             message: 'Login successful',
             user: {
                 name: user.UserName,
-                email: user.Email
+                email: user.Email,
+                ImgAvt: user.ImgAvt
             }
         });
     } catch (error) {
@@ -128,6 +126,31 @@ app.post('/login', async (req, res) => {
         });
     }
 });
+
+// app.get('/login', async (req, res) => {
+//     let pool = await poolPromise;
+//     const result = await pool.request()
+//         .input('email', 'johndoe@example.com')
+//         .query('SELECT * FROM Users WHERE Email = @email OR Phone = @email');
+    
+//     const user = result.recordset[0];
+//     // console.log('User data:', user);
+//     if (user) {
+//         res.json({
+//             success: true,
+//             user: {
+//                 name: user.UserName,
+//                 email: user.Email,
+//                 ImgAvt: user.ImgAvt
+//             }
+//         });
+//     } else {
+//         res.status(404).json({
+//             success: false,
+//             message: 'User not found'
+//         });
+//     }
+// });
 
 // API đăng xuất
 app.post('/logout', (req, res) => {
@@ -143,12 +166,12 @@ app.post('/users', async (req, res) => {
     try {
         const pool = await poolPromise;
         const { name, email, phone, password, "Confirm Password": confirmPass, terms } = req.body;
-        
+
         // Kiểm tra email đã tồn tại chưa
         const emailCheck = await pool.request()
             .input('email', email)
             .query('SELECT Email FROM users WHERE Email = @email');
-            
+
         if (emailCheck.recordset.length > 0) {
             return res.status(400).json({
                 success: false,
@@ -160,7 +183,7 @@ app.post('/users', async (req, res) => {
         const phoneCheck = await pool.request()
             .input('phone', phone)
             .query('SELECT Phone FROM users WHERE Phone = @phone');
-            
+
         if (phoneCheck.recordset.length > 0) {
             return res.status(400).json({
                 success: false,
@@ -180,7 +203,7 @@ app.post('/users', async (req, res) => {
                 INSERT INTO users (UserName, Email, Phone, pass_word, ConfirmPass, terms) 
                 VALUES (@name, @email, @phone, @password, @confirmPass, @terms)
             `);
-            
+
         console.log('User registered successfully');
         res.json({
             success: true,
@@ -192,7 +215,7 @@ app.post('/users', async (req, res) => {
             code: error.code,
             state: error.state
         });
-        
+
         res.status(500).json({
             success: false,
             error: error.message || 'Lỗi khi đăng ký'
