@@ -1,15 +1,20 @@
+/* eslint-disable no-unused-vars */
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const { sql, poolPromise } = require('./dbConfig');
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
+const { pool } = require('mssql');
 const app = express();
 const port = 3001;
-
 // Middleware
 app.use(cors({
-    origin: 'http://localhost:3000', // Frontend URL
-    credentials: true // Cho phép gửi cookies
+    origin: 'http://localhost:3000', // Replace with your frontend URL
+    medthods: ['GET', 'POST'],
+    credentials: true // Allow credentials (cookies, authorization headers, etc.)
 }));
 app.use(bodyParser.json());
 app.use(cookieParser());
@@ -27,6 +32,100 @@ const checkAuth = (req, res, next) => {
     req.user = JSON.parse(userCookie);
     next();
 };
+// Cấu hình cho multer
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, './uploads/');
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + '-' + file.originalname);
+    }
+});
+const upload = multer({ storage: storage })
+
+// Endpoint Để lấy ảnh
+app.post('/upload-avatar', upload.single('avatar'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'No file uploaded'
+            });
+        }
+        const avatarPath = `http://localhost:3001/uploads/${req.file.filename}`;
+        const email = req.body.email;
+        // console.log(email);
+        // Save file to SQL Server
+        const pool = await poolPromise;
+        // Check old files and remove
+        const TakeOldFiles = await pool.request()
+            .input('Email', email)
+            .query('Select * FROM users WHERE Email = @Email')
+        if (TakeOldFiles.recordset.length > 0) {
+            if (TakeOldFiles.recordset[0].Img_avt != null) {
+                const oldFile = TakeOldFiles.recordset[0].Img_avt;
+                const TakeOldFileName = oldFile.split('/').pop();
+                const FullOldPath = path.join(__dirname, 'uploads', TakeOldFileName)
+                fs.unlinkSync(FullOldPath);
+            }
+        }
+        await pool.request()
+            .input('Avatar', avatarPath)
+            .input('email', email)
+            .query('UPDATE users SET Img_avt = @Avatar WHERE Email = @email');
+
+        const result_query = await pool.request()
+            .input('email', email)
+            .query('SELECT * FROM users WHERE Email = @email');
+
+        if (result_query.recordset.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        const user = result_query.recordset[0];
+        console.log(user);
+        res.cookie('user', JSON.stringify({
+            name: user.UserName,
+            email: user.Email,
+            Phone: user.Phone,
+            ImgAvt: avatarPath,
+        }), {
+            maxAge: 24 * 60 * 60 * 60, // 24hours
+            httpOnly: true,
+            secure: true,
+            sameSite: 'strict'
+        })
+        res.send({
+            path: avatarPath,
+        })
+        app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+    } catch (error) {
+        console.error('Error uploading avatar:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error uploading avatar'
+        });
+    }
+})
+// app.get('/upload-avatar', upload.single('avatar'), async(req,res)=>{
+//     console.log('Received file:', req.file);
+//     if(!req.file){
+//         return res.status(400).json({
+//             success: false,
+//             message: 'No file uploaded'
+//         });
+//     }
+//     const avatarPath = req.file.path;
+//     res.json({
+//         success: true,
+//         message: 'Avatar uploaded successfully',
+//         avatarPath: avatarPath
+//     })
+// })
+// Endpoints để hiển thị ảnh người dùng
 
 // API để kiểm tra authentication (GET)
 app.get('/check-auth', (req, res) => {
@@ -41,12 +140,13 @@ app.get('/check-auth', (req, res) => {
 
     try {
         const userData = JSON.parse(userCookie);
-        res.json({
+        res.send({
             success: true,
             user: {
                 name: userData.name,
                 email: userData.email,
                 ImgAvt: userData.ImgAvt,
+                Phone: userData.phone
                 //...
             }
         });
@@ -89,7 +189,6 @@ app.post('/login', async (req, res) => {
             .query('SELECT * FROM Users WHERE Email = @email OR Phone = @email');
 
         const user = result.recordset[0];
-
         if (!user || user.pass_word !== password) {
             return res.status(401).json({
                 success: false,
@@ -101,7 +200,7 @@ app.post('/login', async (req, res) => {
             name: user.UserName,
             email: user.Email,
             phone: user.Phone,
-            ImgAvt: user.ImgAvt
+            ImgAvt: user.Img_avt,
         }), {
             maxAge: 24 * 60 * 60 * 1000,
             httpOnly: true,
@@ -115,7 +214,7 @@ app.post('/login', async (req, res) => {
             user: {
                 name: user.UserName,
                 email: user.Email,
-                ImgAvt: user.ImgAvt
+                ImgAvt: user.Img_avt,
             }
         });
     } catch (error) {
@@ -127,30 +226,6 @@ app.post('/login', async (req, res) => {
     }
 });
 
-// app.get('/login', async (req, res) => {
-//     let pool = await poolPromise;
-//     const result = await pool.request()
-//         .input('email', 'johndoe@example.com')
-//         .query('SELECT * FROM Users WHERE Email = @email OR Phone = @email');
-    
-//     const user = result.recordset[0];
-//     // console.log('User data:', user);
-//     if (user) {
-//         res.json({
-//             success: true,
-//             user: {
-//                 name: user.UserName,
-//                 email: user.Email,
-//                 ImgAvt: user.ImgAvt
-//             }
-//         });
-//     } else {
-//         res.status(404).json({
-//             success: false,
-//             message: 'User not found'
-//         });
-//     }
-// });
 
 // API đăng xuất
 app.post('/logout', (req, res) => {
@@ -200,8 +275,8 @@ app.post('/users', async (req, res) => {
             .input('confirmPass', confirmPass)
             .input('terms', terms)
             .query(`
-                INSERT INTO users (UserName, Email, Phone, pass_word, ConfirmPass, terms) 
-                VALUES (@name, @email, @phone, @password, @confirmPass, @terms)
+                INSERT INTO users (UserName, Email, Phone, pass_word, ConfirmPass, terms, Img_avt) 
+                VALUES (@name, @email, @phone, @password, @confirmPass, @terms, https://i.pinimg.com/474x/75/98/a2/7598a2291f7a6c6a220ffb010dd3384e.jpg)
             `);
 
         console.log('User registered successfully');
@@ -223,7 +298,17 @@ app.post('/users', async (req, res) => {
     }
 });
 
-// API kiểm tra authentication
+// API để kiểm tra thông tin người dùng đang đăng nhập (GET)
+app.get('/current-user', checkAuth, (req, res) => {
+    res.json({
+        success: true,
+        user: {
+            name: req.user.name,
+            email: req.user.email,
+            ImgAvt: req.user.ImgAvt,
+        }
+    });
+});
 
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);

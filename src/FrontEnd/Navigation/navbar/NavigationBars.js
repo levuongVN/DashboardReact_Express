@@ -1,9 +1,11 @@
+/* eslint-disable no-unused-vars */
 import { Disclosure, DisclosureButton, DisclosurePanel, Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
 import { Bars3Icon, BellIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import './custom.css';
 import { useState,useEffect } from 'react';
+import {useUser} from '../../UserContext';
 
 const navigation = [
     { name: 'Dashboard', href: '#', current: true },
@@ -17,25 +19,9 @@ function classNames(...classes) {
     return classes.filter(Boolean).join(' ')
 }
 
-export default function Navbar({ userName }) {
-    const [imageAvt, setImageAvt] = useState(null);
-    useEffect(()=>{
-        const fetchImg = async ()=>{
-            try {
-                const response = await axios.get('http://localhost:3001/check-auth', {
-                    withCredentials: true
-                });
-                if (response.data.success) {
-                    setImageAvt(response.data.user.ImgAvt);
-                }
-            } catch (error) {
-                console.error('Get Image Avt error:', error);
-            }
-        }
-        fetchImg();
-    },[]);
-
-    // console.log(imageAvt);
+export default function Navbar() {
+    const {user,setUser} = useUser();
+    // console.log(user?.ImgAvt)
     return (
         <Disclosure as="nav" className="bg-gray-800">
             <div className="px-8">
@@ -50,7 +36,7 @@ export default function Navbar({ userName }) {
                         </DisclosureButton>
                     </div>
 
-                    
+
                     <div className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
                         <div className="flex shrink-0 items-center ">
                             <svg className='h-8 w-auto' fill="none" height="48" viewBox="0 0 24 48" width="24" xmlns="http://www.w3.org/2000/svg"><path d="m0 15.8981h17.3455l-17.061314 17.0613 2.756374 2.7564 17.06134-17.0613v17.3455h.1104l3.7877-3.7877v-15.9638l-4.2485-4.2485h-15.96596l-3.78553995 3.7855z" fill="#fff" /></svg>
@@ -94,19 +80,19 @@ export default function Navbar({ userName }) {
                                     <span className="sr-only">Open user menu</span>
                                     <img
                                         alt=""
-                                        src={`${userName? imageAvt :"https://i.pinimg.com/474x/75/98/a2/7598a2291f7a6c6a220ffb010dd3384e.jpg" }`}
+                                        src={user?.ImgAvt || "https://i.pinimg.com/474x/75/98/a2/7598a2291f7a6c6a220ffb010dd3384e.jpg"}
                                         className="size-10 rounded-full"
                                     />
-                                    {!userName && <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white"></span>}
+                                    {!user?.name && <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white"></span>}
                                 </MenuButton>
                             </div>
                             <MenuItems
                                 transition
                                 className="absolute right-0 z-10 mt-1 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 transition focus:outline-none data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in"
                             >
-                                {userName && (
+                                {user?.name ? (
                                     <>
-                                        <span className="block px-4 py-2 text-sm text-gray-700 data-[focus]:bg-gray-100 data-[focus]:outline-none border-bottom">Hi {userName}</span>
+                                        <span className="block px-4 py-2 text-sm text-gray-700 data-[focus]:bg-gray-100 data-[focus]:outline-none border-bottom">Hi {user.name}</span>
                                         <MenuItem>
                                             <Link to="/Setting" className="block px-4 py-2 text-sm text-gray-700 data-[focus]:bg-gray-100 data-[focus]:outline-none">
                                                 Setting
@@ -130,8 +116,7 @@ export default function Navbar({ userName }) {
                                             </button>
                                         </MenuItem>
                                     </>
-                                )}
-                                {!userName &&
+                                ) : (
                                     <MenuItem>
                                         <Link
                                             to="/Login"
@@ -140,7 +125,7 @@ export default function Navbar({ userName }) {
                                             Login
                                         </Link>
                                     </MenuItem>
-                                }
+                                )}
                             </MenuItems>
                         </Menu>
                     </div>

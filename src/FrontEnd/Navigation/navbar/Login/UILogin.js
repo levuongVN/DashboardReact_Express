@@ -1,14 +1,17 @@
 import React from 'react';
 import { useState } from 'react';
+import { useUser } from '../../../UserContext';
 import './UILogin.css';
+// eslint-disable-next-line no-unused-vars
 import { Link, useNavigate } from 'react-router-dom';
 import { Button, TextField } from "@mui/material";
 import axios from 'axios';
 import debounce from 'lodash/debounce'; // Thu vien co san ham debounce
 
 // handleLogin()
-export default function UILogin({UserName}) {
+export default function UILogin() {
     const navigate = useNavigate();
+    const {setUser} = useUser()
     // eslint-disable-next-line no-unused-vars
     const [data_email_name, setdata_email_name] = useState('');
     const [data_password, setData_password] = useState('');
@@ -48,7 +51,7 @@ export default function UILogin({UserName}) {
                 seterrorMessagePassword('Password cannot be empty');
                 return;
             }
-            console.log(convertToLocalPhone(data_email_name));
+            // console.log(convertToLocalPhone(data_email_name));
             // Gọi API login
             const response = await axios.post('http://localhost:3001/login', {
                 email: convertToLocalPhone(data_email_name),
@@ -57,10 +60,11 @@ export default function UILogin({UserName}) {
                 withCredentials: true // Quan trọng để nhận cookies từ server
             });
 
-            if (response.data.success ===true) {
-                UserName(response.data.user.name);
+            if (response.data.success === true) {
                 seterrorMessageEmailPhone('');
                 seterrorMessagePassword('');
+                // console.log(response.data.user);
+                setUser(response.data.user);
                 navigate('/');
             }
         } catch (error) {
@@ -183,7 +187,7 @@ export default function UILogin({UserName}) {
                         <div className='col'>
                             <Button variant="outlined" className='p-2 text-light bgFaceBookLogin'>
                                 <svg xmlns="http://www.w3.org/2000/svg" className='me-1' x="0px" y="0px" width="20" height="20" viewBox="0 0 48 48">
-                                    <linearGradient id="Ld6sqrtcxMyckEl6xeDdMa_uLWV5A9vXIPu_gr1" x1="9.993" x2="40.615" y1="9.993" y2="40.615" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#2aa4f4"></stop><stop offset="1" stop-color="#007ad9"></stop></linearGradient><path fill="url(#Ld6sqrtcxMyckEl6xeDdMa_uLWV5A9vXIPu_gr1)" d="M24,4C12.954,4,4,12.954,4,24s8.954,20,20,20s20-8.954,20-20S35.046,4,24,4z"></path><path fill="#fff" d="M26.707,29.301h5.176l0.813-5.258h-5.989v-2.874c0-2.184,0.714-4.121,2.757-4.121h3.283V12.46 c-0.577-0.078-1.797-0.248-4.102-0.248c-4.814,0-7.636,2.542-7.636,8.334v3.498H16.06v5.258h4.948v14.452 C21.988,43.9,22.981,44,24,44c0.921,0,1.82-0.084,2.707-0.204V29.301z"></path>
+                                    <linearGradient id="Ld6sqrtcxMyckEl6xeDdMa_uLWV5A9vXIPu_gr1" x1="9.993" x2="40.615" y1="9.993" y2="40.615" gradientUnits="userSpaceOnUse"><stop offset="0" stopColor="#2aa4f4"></stop><stop offset="1" stopColor="#007ad9"></stop></linearGradient><path fill="url(#Ld6sqrtcxMyckEl6xeDdMa_uLWV5A9vXIPu_gr1)" d="M24,4C12.954,4,4,12.954,4,24s8.954,20,20,20s20-8.954,20-20S35.046,4,24,4z"></path><path fill="#fff" d="M26.707,29.301h5.176l0.813-5.258h-5.989v-2.874c0-2.184,0.714-4.121,2.757-4.121h3.283V12.46 c-0.577-0.078-1.797-0.248-4.102-0.248c-4.814,0-7.636,2.542-7.636,8.334v3.498H16.06v5.258h4.948v14.452 C21.988,43.9,22.981,44,24,44c0.921,0,1.82-0.084,2.707-0.204V29.301z"></path>
                                 </svg> Facebook
                             </Button>
                         </div>
