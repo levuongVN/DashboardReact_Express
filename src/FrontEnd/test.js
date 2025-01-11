@@ -3,67 +3,63 @@ import axios from 'axios';
 import { useUser } from './UserContext';
 
 function AvatarUpload() {
-  const [avatar, setAvatar] = useState(null); // File được chọn
-  const [savedAvatar, setSavedAvatar] = useState(''); // Avatar đã lưu
-  const { user, setUser } = useUser(); // Lấy user từ UserContext
+  const [formValues, setFormValues] = useState({
+    name: "",
+    email: "",
+    avatar: null, // Nếu muốn upload file
+});
 
-  // Xử lý chọn file
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    setAvatar(file); // Chỉ lưu file, không hiển thị preview
-  };
+const handleChange = (e) => {
+    const { name, value, files } = e.target;
+    setFormValues({
+        ...formValues,
+        [name]: files ? files[0] : value, // Lưu file hoặc giá trị text
+    });
+};
 
-  // Xử lý upload
-  const handleUpload = async () => {
-    if (!avatar) {
-      alert('Please select a file');
-      return;
-    }
+const handleSubmit = async (e) => {
+    e.preventDefault();
 
+    // Tạo FormData
     const formData = new FormData();
-    formData.append('avatar', avatar);
+    formData.append("name", formValues.name);
+    formData.append("email", formValues.email);
 
+    // Gửi FormData qua fetch
     try {
-      const response = await axios.post('http://localhost:3001/upload-avatar', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+        const response = await fetch("http://localhost:3001/submit", {
+            method: "POST",
+            body: formData, // Gửi FormData
+        });
 
-      // Sau khi lưu thành công, hiển thị ảnh mới
-      setSavedAvatar(response.data.path);
-      setUser(prevUser => ({...prevUser, ImgAvt: response.data.path })); // Cập nhật avatar mới vào user
-      alert('Avatar updated successfully!');
+        const data = await response.json();
+        console.log("Server response:", data);
     } catch (error) {
-      console.error('Upload failed:', error);
-      alert('Failed to upload avatar');
+        console.error("Error:", error);
     }
-  };
+};
 
-  return (
-    <div className='bg-light'>
-      <h2>Update Avatar</h2>
-      <input type="file" accept="image/*" onChange={handleFileChange} />
-      <button className='bg-white' onClick={handleUpload}>Save</button>
-
-      {savedAvatar && (
-        <div>
-          <h3>update Avatar:</h3>
-          <img src={savedAvatar} alt="Avatar" width={150} />
-        </div>
-      )}
-      {/* New img */}
-      {user?.ImgAvt && (
-        // console.log(user.ImgAvt)
-        <div>
-          <h3>Current Avatar:</h3>
-          <img src={user?.ImgAvt} alt="Avatar" width={150} />
-        </div>
-    )}
-    {
-      console.log(user?.ImgAvt.length +" "+ "https://i.pinimg.com/474x/75/98/a2/7598a2291f7a6c6a220ffb010dd3384e.jpg".length)
-    }
-    <img src={user?.ImgAvt} alt="Avatar" width={150} />
-    </div>
-  );
-}
+return (
+    <form onSubmit={handleSubmit}>
+        <input
+            type="text"
+            name="name"
+            placeholder="Name"
+            value={formValues.name}
+            onChange={handleChange}
+            required
+        />
+        <input
+            type="email"
+            name="email"
+            placeholder="Email"
+            value={formValues.email}
+            onChange={handleChange}
+            required
+        />
+        <button type="submit" className='bg-white'>Submit</button>
+    </form>
+);
+};
 
 export default AvatarUpload;

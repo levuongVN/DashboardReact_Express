@@ -3,100 +3,92 @@ import React, { useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
 import { SimpleTreeView } from '@mui/x-tree-view/SimpleTreeView';
 import { TreeItem } from '@mui/x-tree-view/TreeItem';
-import { Avatar, Button, colors, InputLabel } from '@mui/material';
+import { Avatar, Button } from '@mui/material';
 import { TextField } from '@mui/material';
-import { Typography } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faXmark } from '@fortawesome/free-solid-svg-icons';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useUser } from '../../../UserContext';
 
 const TreeItemUserLink = [
     {
-        Name: "Avatar",
-        href: '#ImageAvatar',
+        Name: "Information",
+        href: '#information',
     },
     {
-        Name: "Name",
-        href: '#Email',
+        Name: "Projects",
+        href: '#projects',
     },
     {
-        Name: "Phone",
-        href: '#Phone',
+        Name: "Coleagues",
+        href: '#coleagues',
     },
     {
-        Name: "Email",
-        href: '#Email',
+        Name: "Teams",
+        href: '#teams',
     },
     {
         Name: "Password",
         href: '#Password',
     },
 ]
-export default function Profile() {
+export default function Profile({ChangeImg, ChangeName,ChangePhone,CheckSave}) {
     const { user, setUser } = useUser(); // Lấy user từ UserContext
+    // console.log(user?.Phone)
     const navigate = useNavigate();
-    const [UserData, setUserData] = useState({
-        name: user?.name || '',
+    const [DataChanges, setDataChanges] = useState({
+        name: user?.name|| '',
         email: user?.email || '',
-        phone: user?.Phone || '',
-        ImgAvt: user?.ImgAvt || '',
-        ImgAvtURL: ''
+        Phone: user?.Phone || '',
+        ImgAvt: user?.ImgAvt|| '',
+        ImgUrl: ''
     })
-    // console.log(typeof UserData.ImgAvt)
     useEffect(() => {
-        if (user) {
-            setUserData({
-                name: user?.name,
-                email: user?.email,
-                phone: user?.Phone,
-                ImgAvt: user?.ImgAvt,
-                ImgAvtURL: ''
-            })
-        }
-    }, [user]);
-
-    // useEffect(() => {
-    //     // Kiểm tra độ dài của đường dẫn ảnh
-    //     if (UserData.ImgAvt && UserData.ImgAvt.length > 0) {
-    //         console.log(`Độ dài của đường dẫn ảnh: ${UserData.ImgAvt.length}`);
-    //         console.log("Do dai mong muon: "+ UserData.ImgAvt.length)
-    //     }
-    // }, [UserData.ImgAvt]);
-
+        setDataChanges({
+            name: user?.name|| '',
+            email: user?.email || '',
+            Phone: user?.Phone || '',
+            ImgAvt: user?.ImgAvt|| '',
+            ImgUrl: ''
+        })
+    },[user])
     const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (file) {
-            setUserData(prevData => ({ ...prevData, ImgAvt: file })); // Lưu tệp gốc
+            ChangeImg(file); // Gọi hàm ChangeImg để cập nhật ảnh
+            CheckSave(true);
             const fileURL = URL.createObjectURL(file);
-            setUserData(prevData => ({ ...prevData, ImgAvtURL: fileURL })); // Lưu ObjectURL cho hiển thị
+            setDataChanges(prevData => ({...prevData, ImgUrl: fileURL })); // Cập nhật ảnh mới vào state
+        } else {
+            console.log('No file selected'); // Thêm thông báo nếu không có tệp nào được chọn
         }
     }
-    const handleSave = async () => {
-        const Form_Data = new FormData();
-        Form_Data.append('avatar', UserData.ImgAvt); // Gửi tệp gốc
-        Form_Data.append('email', UserData.email);
-
-        try {
-            const PostAPI = await axios.post('http://localhost:3001/upload-avatar',
-                Form_Data,
-                {
-                    headers: {'Content-Type': 'multipart/form-data'},
-                    withCredentials: true
-                });
-            console.log('Response from upload:', PostAPI.data); // Thêm log để kiểm tra phản hồi
-            setUser(prevUser => ({...prevUser, ImgAvt: PostAPI.data.path })); // Cập nhật avatar mới vào user
-            console.log('Updated user avatar:', PostAPI.data.path); // Thêm log để kiểm tra URL mới
-        } catch (error) {
-            console.log('Error uploading avatar:', error); // Thêm log để kiểm tra lỗi
+    const handleInputChangeName = (e) => {
+        ChangeName(e.target.value)
+        if(e.target.value === user?.name){
+            CheckSave(false)
+        }else{
+            CheckSave(true)
         }
-    };
-
+        setDataChanges(prevData => ({...prevData, name:e.target.value})); //
+        // console.log(e.target.value);
+    }
+    const handleInputChangePhone = (e) => {
+        ChangePhone(e.target.value)
+        if(e.target.value === user?.Phone){
+            CheckSave(false)
+        }else{
+            CheckSave(true)
+        }
+        setDataChanges(prevData => ({...prevData, Phone:e.target.value})); //
+        // console.log(e.target.value);
+    }
     return (
-        <div className='bg-white flex'>
+        <div className='bg-light flex border' >
+            {/* Tree content  menu */}
             <div className='bg-light'>
-                <Box className="d-none d-md-block" sx={{ minHeight: "100vh", minWidth: 250 }}>
+                <Box className="d-none d-md-block" sx={{ minHeight: "100%", minWidth: 250 }}>
                     <SimpleTreeView>
                         <TreeItem itemId="grid" label="General">
                             {Object.keys(TreeItemUserLink).map(function (key) {
@@ -119,37 +111,39 @@ export default function Profile() {
                         <FontAwesomeIcon icon={faXmark} />
                     </button>
                 </div>
-                <div className='row'>
-                    <div className='col  d-flex'>
-                        <div className='textTitle  col-md-3 col'>
+                <div className='row mb-1'>
+                    <div className='col d-block d-md-flex'>
+                        <div className='textTitle col-md-3 col-12'>
                             <h4>Profile</h4>
                             <p>Set your account details</p>
                         </div>
-                        <div className='col-md-9 d-flex'>
+                        <div className='col-md-9 d-block col-12 d-md-flex '>
                             <div className='detailsInformation d-flex align-items-center' style={{ width: "max-content" }}>
                                 <div>
                                     <div className='Name_Phone'>
                                         <TextField
                                             label="Name"
                                             id="outlined-size-small"
-                                            value={UserData.name || ''}
+                                            value={DataChanges.name ||''}
                                             size="small"
                                             sx={{ width: '35%' }}
                                             className='me-2'
+                                            onChange={handleInputChangeName}
                                         />
                                         <TextField
                                             label="Phone"
                                             id="outlined-size-small"
-                                            value={UserData.phone || ''}
+                                            value={DataChanges.Phone ||''}
                                             size="small"
                                             sx={{ width: '35%' }}
+                                            onChange={handleInputChangePhone}
                                         />
                                     </div>
                                     <div className='Email'>
                                         <TextField
                                             label="Email"
                                             id="outlined-size-small"
-                                            value={UserData.email}
+                                            value={DataChanges.email ||''}
                                             size="small"
                                             sx={{ width: '71%' }}
                                             className='mt-4'
@@ -160,10 +154,10 @@ export default function Profile() {
                             </div>
                             <div className='AvtUser'>
                                 <Avatar 
-                                    sx={{ width: 75, height: 75 }} 
-                                    className='mb-2 border' 
+                                    sx={{ width: 75, height: 75 }}
+                                    className='mb-2 border mt-md-0 mt-2' 
                                     alt="User" 
-                                    src={UserData.ImgAvtURL ==='' ? UserData.ImgAvt : UserData.ImgAvtURL}
+                                    src={DataChanges.ImgUrl!== '' ? DataChanges.ImgUrl : user.ImgAvt }
                                 />
                                 <input
                                     accept="image/*"
@@ -177,9 +171,6 @@ export default function Profile() {
                                         Upload
                                     </Button>
                                 </label>
-                                <Button variant="contained" size='small' color="secondary" onClick={handleSave} className='ms-2'>
-                                    Save
-                                </Button>
                             </div>
                         </div>
                     </div>

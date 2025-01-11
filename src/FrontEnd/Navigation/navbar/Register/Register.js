@@ -1,3 +1,5 @@
+
+// eslint-disable-next-line no-unused-vars
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Checkbox } from '@mui/material';
@@ -47,19 +49,10 @@ export default function Register() {
                 navigate('/Login');
             }
         } catch (error) {
-            // Log ra toàn bộ error object
             console.log('Full error object:', error);
-            
-            // Log ra response từ server
-            if (error.response) {
-                // console.log('Server response:', {
-                //     status: error.response.status,
-                //     data: error.response.data
-                // });
-                
-                // Cập nhật trạng thái lỗi cho trường tương ứng
+
+            if (error.response && error.response.data && typeof error.response.data.message === 'string') {
                 if (error.response.data.message.includes('Email')) {
-                    // Nếu message bên server mà tồn tại sẽ trả về
                     setErrors(prev => ({
                         ...prev,
                         email: error.response.data.message
@@ -116,6 +109,21 @@ export default function Register() {
             }
         } else if (name === 'phone' && value.length !== 0) {
             const regex = /^(\+?[0-9]{1,3}[-. ]?)?[0-9]{10}$/
+            // convertIdPhone to phoneRegions
+            const phoneRegions = {
+                '+84': '09',
+                '+1': '',
+                '+44': '07',
+                '+86': '13',
+                '+81': '08',
+                '+82': '05',
+                '+33': '06'
+            }
+            for(let [AreaCodePhone,LocalPhone]of Object.entries(phoneRegions)){
+                if(value.startsWith(AreaCodePhone)){
+                    value = LocalPhone + value.substring(AreaCodePhone.length);
+                }
+            }
             if (!regex.test(value)) {
                 setErrors(prev => ({
                     ...prev,

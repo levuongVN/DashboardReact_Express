@@ -51,20 +51,23 @@ export default function UILogin() {
                 seterrorMessagePassword('Password cannot be empty');
                 return;
             }
-            // console.log(convertToLocalPhone(data_email_name));
-            // Gọi API login
+            
             const response = await axios.post('http://localhost:3001/login', {
                 email: convertToLocalPhone(data_email_name),
                 password: data_password
             }, {
-                withCredentials: true // Quan trọng để nhận cookies từ server
+                withCredentials: true
             });
 
             if (response.data.success === true) {
                 seterrorMessageEmailPhone('');
                 seterrorMessagePassword('');
-                // console.log(response.data.user);
                 setUser(response.data.user);
+                // Gọi lại API để lấy thông tin người dùng mới
+                const userResponse = await axios.get('http://localhost:3001/check-auth', { withCredentials: true });
+                if (userResponse.data.success) {
+                    setUser(userResponse.data.user);
+                }
                 navigate('/');
             }
         } catch (error) {

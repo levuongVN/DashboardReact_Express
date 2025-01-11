@@ -21,7 +21,13 @@ function classNames(...classes) {
 
 export default function Navbar() {
     const {user,setUser} = useUser();
-    // console.log(user?.ImgAvt)
+
+    // useEffect(() => {
+    //     if (user) {
+    //         console.log(user.phone);
+    //     }
+    // }, [user]);
+
     return (
         <Disclosure as="nav" className="bg-gray-800">
             <div className="px-8">
