@@ -22,7 +22,7 @@ export default function SettingUser() {
       ImgAvt: user?.ImgAvt || '',
     })
   }, [user])
-  console.log(UserData);
+  // console.log(UserData);
   const handleSave = async () => {
     const Form_Data = new FormData();
     if (UserData.ImgAvt) {
@@ -40,6 +40,7 @@ export default function SettingUser() {
         })
       // console.log('Response from upload:', PostImg);
       setUser(PostInformations.data.user);
+      console.log(user)
       setUserData({
         name: PostInformations.data.user.name || '',
         email: PostInformations.data.user.email || '',

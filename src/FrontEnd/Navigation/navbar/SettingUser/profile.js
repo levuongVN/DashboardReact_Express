@@ -157,7 +157,7 @@ export default function Profile({ChangeImg, ChangeName,ChangePhone,CheckSave}) {
                                     sx={{ width: 75, height: 75 }}
                                     className='mb-2 border mt-md-0 mt-2' 
                                     alt="User" 
-                                    src={DataChanges.ImgUrl!== '' ? DataChanges.ImgUrl : user.ImgAvt }
+                                    src={DataChanges.ImgUrl!== '' ? DataChanges.ImgUrl : user?.ImgAvt }
                                 />
                                 <input
                                     accept="image/*"

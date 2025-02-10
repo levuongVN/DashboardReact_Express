@@ -16,28 +16,49 @@ const userReducer = (state, action) => {
 const UserContext = createContext();
 
 export default function UserProvider({ children }) {
-    const [state, dispatch] = useReducer(userReducer, { user: '' }); // Khởi tạo state với useReducer
+    const [state, dispatch] = useReducer(userReducer, { user: null });
 
     useEffect(() => {
         async function fetchData() {
             try {
-                const response = await axios.get('http://localhost:3001/check-auth', { withCredentials: true });
+                const response = await axios.get(`http://localhost:3001/check-auth`, { 
+                    withCredentials: true, 
+                    headers: { 'x-session-id': localStorage.getItem('sessionId') } 
+                });
+
                 if (response.data.success) {
                     const DataOfUser = response.data.user;
-                    dispatch({ type: 'SET_USER', payload: DataOfUser }); // Lưu thông tin người dùng
+                    
+                    // ✅ Lưu sessionId vào localStorage nếu chưa có
+                    if (DataOfUser.sessionId) {
+                        localStorage.setItem('sessionId', DataOfUser.sessionId);
+                    }
+
+                    dispatch({ type: 'SET_USER', payload: DataOfUser });
                 } else {
-                    dispatch({ type: 'CLEAR_USER' }); // Nếu không xác thực, đặt user là null
+                    dispatch({ type: 'CLEAR_USER' });
                 }
             } catch (error) {
                 console.error('Error fetching user:', error);
-                dispatch({ type: 'CLEAR_USER' }); // Đặt user là null nếu có lỗi
+                dispatch({ type: 'CLEAR_USER' });
             }
         }
         fetchData();
     }, []);
 
     return (
-        <UserContext.Provider value={{ user: state.user, setUser: (user) => dispatch({ type: 'SET_USER', payload: user }) }}>
+        <UserContext.Provider value={{
+            user: state.user,
+            setUser: (user) => {
+                // ✅ Khi setUser, cũng lưu sessionId
+                if (user && user.sessionId) {
+                    localStorage.setItem('sessionId', user.sessionId);
+                } else {
+                    localStorage.removeItem('sessionId');
+                }
+                dispatch({ type: 'SET_USER', payload: user });
+            }
+        }}>
             {children}
         </UserContext.Provider>
     );

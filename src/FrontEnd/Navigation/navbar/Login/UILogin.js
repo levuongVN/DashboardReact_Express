@@ -11,7 +11,7 @@ import debounce from 'lodash/debounce'; // Thu vien co san ham debounce
 // handleLogin()
 export default function UILogin() {
     const navigate = useNavigate();
-    const {setUser} = useUser()
+    const { setUser } = useUser()
     // eslint-disable-next-line no-unused-vars
     const [data_email_name, setdata_email_name] = useState('');
     const [data_password, setData_password] = useState('');
@@ -21,7 +21,7 @@ export default function UILogin() {
     // Hàm chuyển đổi số điện thoại quốc tế về số local
     const convertToLocalPhone = (phone) => {
         if (!phone) return '';  // Thêm kiểm tra phone tồn tại
-        
+
         const countryPrefixes = {
             '+84': '0',    // Vietnam
             '+1': '',      // US/Canada
@@ -40,7 +40,7 @@ export default function UILogin() {
                 return localPrefix + phone.substring(prefix.length);
             }
         }
-        
+
         return phone;
     };
 
@@ -51,8 +51,9 @@ export default function UILogin() {
                 seterrorMessagePassword('Password cannot be empty');
                 return;
             }
-            
-            const response = await axios.post('http://localhost:3001/login', {
+
+            // Thêm port hiện tại vào URL
+            const response = await axios.post(`http://localhost:3001/login`, {
                 email: convertToLocalPhone(data_email_name),
                 password: data_password
             }, {
@@ -60,6 +61,10 @@ export default function UILogin() {
             });
 
             if (response.data.success === true) {
+                const cookies = document.cookie.split('; ').find(row => row.startsWith('authToken_'));
+                if (cookies) {
+                    localStorage.setItem('sessionId', cookies.split('=')[0]); // Lưu tên cookie vào localStorage
+                }
                 seterrorMessageEmailPhone('');
                 seterrorMessagePassword('');
                 setUser(response.data.user);
@@ -79,10 +84,10 @@ export default function UILogin() {
     const ValidationEmailPhone = (value) => {
         // Regex cho email
         const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-        
+
         // Regex cho số điện thoại quốc tế
         const phoneRegex = /^\+?(?:[0-9] ?){6,14}[0-9]$/;
-        
+
         if (emailRegex.test(value) || phoneRegex.test(value)) {
             seterrorMessageEmailPhone('');
             return true;
