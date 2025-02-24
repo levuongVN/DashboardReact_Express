@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 import { Disclosure, DisclosureButton, DisclosurePanel, Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
 import { Bars3Icon, BellIcon, XMarkIcon } from '@heroicons/react/24/outline'
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import './custom.css';
 import NotificationDropdown from './notification';
@@ -11,7 +11,7 @@ import { flatMap } from 'lodash';
 
 const navigation = [
     { name: 'Dashboard', to: '/', current: true },
-    { name: 'Team', to: '/Team', current: false },
+    { name: 'Team', to: ['/Team', '/Team/Management'], current: false },
     { name: 'Projects', to: 'Projects', current: false },
     { name: 'Calendar', to: '/Calendar', current: false },
     { name: "Todo List", to: '/Todo', current: false },
@@ -23,14 +23,13 @@ function classNames(...classes) {
 
 export default function Navbar() {
     const { user, setUser } = useUser();
-    // useEffect(()=>{
-    //     if(!user){
-    //         console.log(false);
-    //     }else{
-    //         console.log(true);
-    //         console.log(user.name)
-    //     }
-    // },[user])
+    const location = useLocation();
+
+    const updatedNavigation = navigation.map(item => ({
+        ...item,
+        current: Array.isArray(item.to) ? item.to.includes('/Team') === location.pathname.includes('/Team') : item.to === location.pathname
+    }));
+    
 return (
     <Disclosure as="nav" className="bg-gray-800">
         <div className="px-8">
@@ -53,18 +52,48 @@ return (
                     </div>
                     <div className="hidden sm:ml-6 sm:block">
                         <div className="flex space-x-4">
-                            {navigation.map((item) => (
-                                <Link
-                                    key={item.name}
-                                    to={item.to}
-                                    aria-current={item.current ? 'page' : undefined}
-                                    className={classNames(
-                                        item.current ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white',
-                                        'rounded-md px-3 py-2 text-sm font-medium',
-                                    )}
-                                >
-                                    {item.name}
-                                </Link>
+                            {updatedNavigation.map((item) => (
+                                item.name === 'Team' ? (
+                                    <Link
+                                        key={item.name}
+                                        to={item.to[0]}
+                                        aria-current={item.current ? 'page' : undefined}
+                                        className={classNames(
+                                            item.current ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white',
+                                            'rounded-md px-3 py-2 text-sm font-medium',
+                                        )}
+                                    >
+                                        {item.name}
+                                    </Link>
+                                ) : (
+                                    Array.isArray(item.to) ? (
+                                        item.to.map((subPath) => (
+                                            <Link
+                                                key={subPath}
+                                                to={subPath}
+                                                aria-current={item.current ? 'page' : undefined}
+                                                className={classNames(
+                                                    item.current ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white',
+                                                    'rounded-md px-3 py-2 text-sm font-medium',
+                                                )}
+                                            >
+                                                {item.name}
+                                            </Link>
+                                        ))
+                                    ) : (
+                                        <Link
+                                            key={item.name}
+                                            to={item.to}
+                                            aria-current={item.current ? 'page' : undefined}
+                                            className={classNames(
+                                                item.current ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white',
+                                                'rounded-md px-3 py-2 text-sm font-medium',
+                                            )}
+                                        >
+                                            {item.name}
+                                        </Link>
+                                    )
+                                )
                             ))}
                         </div>
                     </div>
@@ -72,15 +101,6 @@ return (
 
 
                 <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
-                    {/* <button
-
-                        type="button"
-                        className="relative rounded-full bg-gray-800 p-1 text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
-                    >
-                        <span className="absolute -inset-1.5" />
-                        <span className="sr-only">View notifications</span>
-                        <BellIcon aria-hidden="true" className="size-6" />
-                    </button> */}
                     <div className=''>
                     <NotificationDropdown />
                     </div>

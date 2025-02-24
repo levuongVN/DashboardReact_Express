@@ -1,4 +1,3 @@
-
 // eslint-disable-next-line no-unused-vars
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
@@ -31,10 +30,28 @@ export default function Register() {
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const phoneToCountry = {
+        '+84': 'Vietnam',
+        '+1': 'USA',
+        '+44': 'UK',
+        '+86': 'China',
+        '+81': 'Japan',
+        '+82': 'South Korea',
+        '+33': 'France'
+    };
 
     const fetchPostData = async () => {
         try {
-            const response = await axios.post('http://localhost:3001/users', formData);
+            // Xác định quốc gia từ mã điện thoại
+            let country = '';
+            for (let code in phoneToCountry) {
+                if (formData.phone.startsWith(code)) {
+                    country = phoneToCountry[code];
+                    break;
+                }
+            }
+
+            const response = await axios.post('http://localhost:3001/users', { ...formData, country });
             console.log('Success response:', response.data);
             if (response.data.success) {
                 toast.success('Register success');

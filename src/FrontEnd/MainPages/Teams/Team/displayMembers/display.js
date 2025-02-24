@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useEffect } from "react";
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -41,10 +42,11 @@ export default function Display() {
                     }
                 );
                 const data = res.data;
+                // console.log(data)
                 if (data.success) {
                     setCount(data.colleagues.length);
                     const RowsFetched = data.colleagues.map(item =>
-                        createData(item.UserName, item.EmailColleagues, item.Country, item.DateStart, item.TypeJob, item.JobTitle, item.StatusWork)
+                        createData(item.UserName, item.EmailColleagues, item.CountryName, item.DateStart, item.TypeJob, item.JobTitle, item.StatusWork)
                     );
                     setDataColleagues(RowsFetched);
 
@@ -71,7 +73,9 @@ export default function Display() {
     // console.log(CountAll)
     return (
         <div style={{ borderTop: "1px solid white", paddingTop: "1%" }}>
-            <div className={hireOpen ? "position-fixed top-0 start-0 w-100 h-100 bg-black bg-opacity-50" : "d-none"} style={{ zIndex: "2" }}></div>
+            <div className={hireOpen ? "position-fixed top-0 start-0 w-100 h-100 bg-black bg-opacity-50" : "d-none"} style={{ zIndex: "2" }}>
+                
+            </div>
             <div className="d-block d-md-flex col" style={{ color: "white" }}>
                 <div className="d-flex col">
                     <ul className="d-flex">
@@ -114,7 +118,8 @@ export default function Display() {
                             </Link>
                             <p className="bg-purple-700 rounded" style={{ width: '1.5rem', height: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }} >
                                 {CountAll || 0}
-                            </p>                        </li>
+                            </p>                        
+                        </li>
                     </ul>
                 </div>
                 <div>

@@ -3,19 +3,23 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
-const { poolPromise } = require('./dbConfig');
 const multer = require('multer');
 const path = require('path');
-const app = express();
-const port = 3001;
 const jwt = require('jsonwebtoken');
-const { Login } = require('./Login_SignUp_LogOut/Login');
+const { Login, CheckAuth } = require('./Login_SignUp_LogOut/Login');
 const { SignUp } = require('./Login_SignUp_LogOut/Sign_up');
 const { LogOut } = require('./Login_SignUp_LogOut/Log_out');
 const { Update } = require('./updateInformation/update');
-const { colleagues } = require('./Team/Colleagues');
-const { Invites } = require('./Team/Invites');
-const { GetInvites, AcceptInvite } = require('./Team/getInvites');
+const { colleagues, GetMembersActive } = require('./Team/Colleagues');
+const { Invites,AcceptInvite } = require('./Team/Invites');
+const { GetInvites } = require('./Team/getInvites');
+const WebSocket = require("ws"); // Thư viện WebSocket cho Node.js
+const http = require("http"); // Dùng để tạo server HTTP
+const app = express();
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
+const port = 3001;
+
 // Middleware
 app.use(cors({
     origin: true,
@@ -24,6 +28,7 @@ app.use(cors({
 app.use(bodyParser.json());
 app.use(cookieParser());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Middleware kiểm tra authentication
 const checkAuth = (req, res, next) => {
     const cookies = req.cookies;
@@ -41,8 +46,6 @@ const checkAuth = (req, res, next) => {
         next();
     });
 };
-
-
 // Cấu hình cho multer
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -54,38 +57,57 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// API để kiểm tra authentication (GET)
-app.get('/check-auth', checkAuth, (req, res) => {
-    // console.log(req.user)
-    if (!req.user) {
-        return res.json({
-            success: false,
-            message: 'User not authenticated'
-        });
-    }
-    res.json({
-        success: true,
-        user: req.user
+// WebSocket logic
+const UserEmail = {}; // Object để lưu các kết nối
+
+wss.on("connection", (ws) => {
+    console.log("New client connected");
+
+    ws.on('message', (invite) => {
+        try {
+            const data = JSON.parse(invite);
+            // console.log("Received: ", data);
+
+            if (data.type === "online") {
+                UserEmail[data.email] = ws;
+                ws.email = data.email;
+                // console.log(`User ${data.email} registered`);
+            }
+            if(data.type === "invite"){
+               const toUserEmail = data.to;
+               if(UserEmail[toUserEmail]){
+                   UserEmail[toUserEmail].send(JSON.stringify(data));
+               }else{
+                   ws.send(JSON.stringify({type: "error", message: "User not found"}));
+               }
+            }
+            if(data.type ==="AcpStt"){
+              const toUserEmail = data.to;
+              if(UserEmail[toUserEmail] && data.AcpStt){
+                    UserEmail[toUserEmail].send(JSON.stringify(data));
+              }else{
+                ws.send(JSON.stringify({type: "error", message: "User not found"}));
+              }
+            }
+        } catch (error) {
+            console.error("Error processing message:", error);
+        }
+    });
+
+    ws.on('close', () => {
+        console.log(`User ${ws.email} disconnected`);
+        if (ws.email) {
+            delete UserEmail[ws.email];
+        }
+    });
+
+    ws.on('error', (error) => {
+        console.error("WebSocket error:", error);
     });
 });
 
-// API để xem danh sách users (GET) - Yêu cầu đăng nhập
-app.get('/users', checkAuth, async (req, res) => {
-    try {
-        const pool = await poolPromise;
-        const result = await pool.request().query('SELECT * FROM Users');
-        res.json({
-            success: true,
-            data: result.recordset
-        });
-    } catch (error) {
-        console.error('Lỗi:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Lỗi khi truy vấn database'
-        });
-    }
-});
+// API để kiểm tra authentication (GET)
+app.get('/check-auth', checkAuth, CheckAuth);
 
 // API đăng nhập
 app.post('/login', Login);
@@ -101,13 +123,12 @@ app.post('/update-informations', upload.single('avatar'), checkAuth, Update);
 // ... existing code ...
 
 app.get('/colleagues', colleagues)
+app.get('/Members', GetMembersActive)
 app.post('/invites',Invites);
 app.get('/InviteGet', GetInvites); 
-app.post('/Accept-invite', AcceptInvite);
+app.patch('/Accept-invite', AcceptInvite);
 // ... existing code ...
 
-
-
-app.listen(port, () => {
+server.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });

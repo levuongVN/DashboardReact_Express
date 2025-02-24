@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { UserPlus, Mail, Briefcase, Shield, FolderPlus } from 'lucide-react';
 import axios from 'axios';
 import { useUser } from '../../../../UserContext';
@@ -15,6 +15,29 @@ export default function InviteColleague({ closeStt }) {
         notes: ''
     });
     const [error, setError] = useState('');
+    const [ws, setWs] = useState(null);
+
+    // Khởi tạo WebSocket connection
+    useEffect(() => {
+        const socket = new WebSocket('ws://localhost:3001');
+        
+        socket.onopen = () => {
+            // console.log('WebSocket Connected');
+            // Đăng ký user online
+            socket.send(JSON.stringify({ 
+                type: "online", 
+                email: user?.email 
+            }));
+        };
+
+        setWs(socket);
+
+        return () => {
+            if (socket) {
+                socket.close();
+            }
+        };
+    }, [user?.email]);
 
     const roles = [
         { id: 'admin', label: 'Administrator' },
@@ -49,8 +72,8 @@ export default function InviteColleague({ closeStt }) {
         });
         closeStt(false);
     }
-    const fetchInvites = ()=>{
-        axios.post('http://localhost:3001/invites',
+    const fetchInvites = async ()=>{
+       const PostInvite = await axios.post('http://localhost:3001/invites',
             {
                 email: formData.email,
                 emailIsInvited: user.email,
@@ -65,8 +88,9 @@ export default function InviteColleague({ closeStt }) {
                 withCredentials: true
             }
         )
+        return PostInvite.data
     }
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (!formData.projectName.trim()) {
             setError('Please enter project name');
@@ -89,20 +113,40 @@ export default function InviteColleague({ closeStt }) {
             return;
         }
 
+        try {
+            const success = await fetchInvites();
+            
+            if (success.success) {
+                // Gửi thông báo qua WebSocket khi invite thành công
+                if (ws) {
+                    ws.send(JSON.stringify({
+                        type: "invite",
+                        to: formData.email,
+                        from: user.email,
+                        projectName: formData.projectName,
+                        role: formData.role,
+                        jobType: formData.jobType,
+                        jobTitles: formData.jobTitles
+                    }));
+                }
 
-        // Here you would typically send the invitation
-        console.log('Invitation data:', formData);
-        setError('');
-        fetchInvites();
-        // Reset form
-        setFormData({
-            email: '',
-            role: '',
-            jobType: '',
-            jobTitles: '',
-            projectName: '',
-            notes: ''
-        });
+                setError('');
+                setFormData({
+                    email: '',
+                    role: '',
+                    jobType: '',
+                    jobTitles: '',
+                    projectName: '',
+                    notes: ''
+                });
+                closeStt(false);
+            } else {
+                setError(success.message);
+            }
+        } catch (err) {
+            setError('Failed to send invitation');
+            console.error(err);
+        }
     };
     return (
         <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-lg">

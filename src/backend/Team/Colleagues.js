@@ -24,7 +24,7 @@ exports.colleagues = async (req, res) => {
         const resultCountAll = await pool.request().query(CountAll);
         // console.log(resultCountStt.recordset)
         // console.log(resultCountAll.recordset)
-        if(result.recordset.length ===0){
+        if(result.recordset.length === 0){
             return res.status(404).json({
                 success: false,
                 message: 'User not found'
@@ -39,4 +39,27 @@ exports.colleagues = async (req, res) => {
             });
         }
         // console.log('Received email:', req.query.email);
-    };
+};
+
+exports.GetMembersActive = async (req, res) => {
+    const pool = await poolPromise;
+    const queryGetMembers =  `        
+    SELECT UserName,EmailColleagues,JobTitle,TypeJob,WhoInvited FROM ColleaguesInfo 
+    WHERE ColleaguesInfo.StatusWork = 'Active' 
+    `
+    const result = await pool.request()
+    .input('email', req.query.email)
+    .query(queryGetMembers);
+    if(result.recordset[0]){
+        return res.json({
+            success: true,
+            message: 'List of active members',
+            members: result.recordset,
+        });
+    }else{
+        return res.json({
+            success: false,
+            message: 'No active members found'
+        });
+    }
+};

@@ -2,10 +2,30 @@
 const express = require('express');
 const app = express();
 const { poolPromise } = require('../dbConfig');
+
+const phoneToCountry = {
+    '+84': 'Vietnam',
+    '+1': 'USA',
+    '+44': 'UK',
+    '+86': 'China',
+    '+81': 'Japan',
+    '+82': 'South Korea',
+    '+33': 'France'
+};
+
 exports.SignUp = async (req, res) => {
     try {
         const pool = await poolPromise;
         const { name, email, phone, password, "Confirm Password": confirmPass, terms } = req.body;
+
+        // Xác định quốc gia từ mã điện thoại
+        let country = '';
+        for (let code in phoneToCountry) {
+            if (phone.startsWith(code)) {
+                country = phoneToCountry[code];
+                break;
+            }
+        }
 
         // Kiểm tra email đã tồn tại chưa
         const emailCheck = await pool.request()
@@ -40,8 +60,19 @@ exports.SignUp = async (req, res) => {
             .input('terms', terms)
             .query(`
                 INSERT INTO users (UserName, Email, Phone, pass_word, terms, Img_avt) 
-                VALUES (@name, @email, @phone, @password, @terms, 'https://i.pinimg.com/474x/75/98/a2/7598a2291f7a6c6a220ffb010dd3384e.jpg')
+                VALUES (@name, @email, @phone, @password, @terms,'https://i.pinimg.com/474x/75/98/a2/7598a2291f7a6c6a220ffb010dd3384e.jpg')
             `);
+        await pool.request()
+        .input('email', email)
+        .query(
+            `
+            UPDATE users SET CountryID = 
+            (SELECT CountryID FROM countries 
+            WHERE LEFT(users.Phone, LEN(countries.PhoneCode)) = countries.PhoneCode
+            )WHERE Email = @email
+            ;
+            `
+        )
 
         console.log('User registered successfully');
         res.json({

@@ -87,3 +87,16 @@ exports.Login = async (req, res) => {
         });
     }
 };
+exports.CheckAuth = (req, res) => {
+    // console.log(req.user)
+    if (!req.user) {
+        return res.json({
+            success: false,
+            message: 'User not authenticated'
+        });
+    }
+    res.json({
+        success: true,
+        user: req.user
+    });
+};

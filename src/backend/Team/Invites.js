@@ -4,62 +4,44 @@ exports.Invites = async (req, res) => {
         const queryCheckColleagues = `
             SELECT * FROM colleagues WHERE EmailColleagues = @email
         `;
-        const queryCheckHire = `SELECT * FROM Hire WHERE EmailHire = @email`
+        const queryCheckProjectNames = `
+        SELECT ProjectName from Hire where EmailPersonInvite = @email
+        `
         const { email, emailIsInvited, role, jobType, jobTitles, notes, projectName } = req.body;
         const pool = await poolPromise;
-
-        const check = await pool.request()
-            .input('email', email)
-            .query(queryCheckColleagues);
-
-        const checkAcpSTT = await pool.request()
-            .input('email', email)
-            .query(queryCheckHire)
-        if (checkAcpSTT.recordset.length > 0) {
-            if (checkAcpSTT.recordset.Acp) {
-                if (check.recordset.length > 0) {
-                    const today = new Date();
-                    const formattedDate = `${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`;
-
-                    // if the user is invited or exist
-                    const query = `
-                        UPDATE colleagues 
-                        SET DateStart = @dateStart, TypeJob = @jobType, JobTitle = @jobTitles, StatusWork = 'Active'
-                        WHERE EmailColleagues = @email
-                    `;
-
-                    await pool.request()
-                        .input('email', email)
-                        .input('emailIsInvited', emailIsInvited)
-                        .input('projectName', projectName)
-                        .input('decentralization', role)
-                        .input('dateStart', formattedDate)
-                        .input('jobType', jobType)
-                        .input('jobTitles', jobTitles)
-                        .input('notes', notes)
-                        .query(query)
-
-                } else {
-                    const today = new Date();
-                    const formattedDate = `${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`;
-                    // Make a invites and save to the database
-                    const queryInsert = `
-                        INSERT INTO Hire (EmailPersonInvite, EmailPersonIsInvited, ProjectName, Decentralization, JobTitles, JobTypes, Notes)
-                        VALUES (@email, @emailIsInvited, @projectName, @decentralization, @jobTitles, @jobType, @notes)`;
-
-                    await pool.request()
-                        .input('email', email)
-                        .input('emailIsInvited', emailIsInvited)
-                        .input('projectName', projectName)
-                        .input('decentralization', role)
-                        .input('dateStart', formattedDate)
-                        .input('jobType', jobType)
-                        .input('jobTitles', jobTitles)
-                        .input('notes', notes)
-                        .query(queryInsert)
-                }
-            }else{
-                res.json({ success:false });
+        const checkProjectNames = await pool.request()
+        .input('email', email)
+        .input('projectName', projectName)
+        .query(queryCheckProjectNames)
+        if(checkProjectNames.recordset === projectName){
+            return res.send({
+                    success: false,
+                    message:"The project has been existed"
+                })
+        }else{
+            const InsertHire = `
+            INSERT INTO Hire (EmailPersonInvite, EmailPersonIsInvited, ProjectName, Decentralization, JobTitles, JobTypes, Notes)
+            VALUES (@email, @emailIsInvited, @projectName, @Decentralization, @jobTitles, @jobTypes, @notes)
+            `
+            const params = { 
+                email, 
+                emailIsInvited, 
+                projectName, 
+                Decentralization: role, 
+                jobTitles, 
+                jobTypes: jobType, 
+                notes 
+            };
+            
+            const sqlRequest = pool.request();
+            Object.entries(params).forEach(([key, value]) => {
+                sqlRequest.input(key, value);
+            });
+            const QueryHire = await sqlRequest.query(InsertHire);
+            if(QueryHire.rowsAffected > 0){
+                return res.json({
+                    success: true,
+                });
             }
         }
     } catch (error) {
@@ -70,3 +52,105 @@ exports.Invites = async (req, res) => {
         });
     }
 }
+exports.AcceptInvite = async(req, res) => {
+    const {AcpStt, email,ProjectName} = req.body;
+    const queryCheckColleagues = `
+            SELECT * FROM colleagues WHERE EmailColleagues = @email
+    `;
+    const queryUpdateStt = `
+    UPDATE Hire SET AcpStt = @AcpStt WHERE EmailPersonInvite = @email
+    `
+    if(AcpStt){
+        try {
+            const pool = await poolPromise;
+            const result = await pool.request()
+               .input('AcpStt', AcpStt)
+               .input('email', email)
+               .query(queryUpdateStt);
+               // Check colleagues are existed
+            const query = await pool.request().input('email', email).query(queryCheckColleagues);
+            // console.log(query.recordset[0])
+            if(query.recordset[0] !== undefined){
+                const UpdateColleagues = `
+                UPDATE colleagues SET StatusWork = 'Active' WHERE EmailColleagues = @email
+                `
+                const resultColleagues = await pool.request().input('email', email).query(UpdateColleagues);
+                await pool.request()
+                .input('PrjName', ProjectName)
+                .query(
+                    `DELETE FROM Hire WHERE ProjectName = @PrjName`)
+                console.log(true)
+                if(resultColleagues.rowsAffected > 0){
+                    return res.json({
+                        success: true,
+                        message: 'Successfully',
+                        data: result.recordset
+                    });
+                }else{
+                    return res.json({
+                        success: false,
+                        message: 'Your colleague are being active'
+                    });
+                }
+            }else{
+                // In case the user not exists in the colleagues database
+                const TakeEmailInvited = await pool.request().input('email', email)
+                .query('SELECT * FROM Hire WHERE EmailPersonInvite = @email')
+
+                const insertColleaguesQuery = `
+                    INSERT INTO colleagues (EmailColleagues, Country, DateStart, TypeJob, JobTitle, StatusWork, WhoInvited)
+                    VALUES (@email, @CountryID, GETDATE(), @TypeJob, @JobTitle, 'Active', @emailInvited)
+                    `
+                const InformationsInvite = {
+                    email: TakeEmailInvited.recordset[0].EmailPersonInvite,
+                    TypeJob: TakeEmailInvited.recordset[0].JobTypes,
+                    JobTitle: TakeEmailInvited.recordset[0].JobTitles,
+                    WhoInvited: TakeEmailInvited.recordset[0].EmailPersonIsInvited
+                }
+                const GetCountry = await pool.request().input('email', InformationsInvite.email)
+                .query(`SELECT CountryID FROM users WHERE Email = @email`)
+
+                await pool.request()
+                .input('email', InformationsInvite.email)
+                .input('CountryID', GetCountry.recordset[0].CountryID)
+                .input('TypeJob', InformationsInvite.TypeJob)
+                .input('JobTitle', InformationsInvite.JobTitle)
+                .input('emailInvited', InformationsInvite.WhoInvited)
+                .query(insertColleaguesQuery);
+                await pool.request()
+                .input('PrjName', ProjectName)
+                .query(
+                    `DELETE FROM Hire WHERE ProjectName = @PrjName`)
+                // console.log(false)
+            }
+            if(result.rowsAffected > 0){
+                return res.json({
+                    success: true,
+                    message: 'Successfully',
+                    data: result.recordset
+                });
+            }else{
+                return res.status(404).json({
+                    success: false,
+                    message: 'Not found'
+                });
+            }
+        } catch (error) {
+            console.error( error);
+            res.status(500).json({ success: false, message: 'Server error' });
+        }
+    }else{
+        const query = `DELETE Hire WHERE ProjectName = @ProjectName`
+        const pool = await poolPromise;
+        const result = await pool.request()
+        .input('ProjectName', ProjectName)
+        .query(query);
+        return(
+            res.json({
+                success: false,
+                message: 'Rejected'
+            })
+        )
+
+    }
+};

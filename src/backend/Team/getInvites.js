@@ -1,19 +1,18 @@
-const {poolPromise} = require('../dbConfig')
+const { poolPromise } = require('../dbConfig')
 exports.GetInvites = async (req, res) => {
     // console.log(req.query.email)
     try {
-        const query = `
-            SELECT h.*, u.Img_avt 
-            FROM Hire h
-            JOIN Users u ON h.EmailPersonIsInvited = u.Email
-            WHERE h.EmailPersonInvite = @email 
-            AND h.EmailPersonIsInvited != @email;
+        const queryGetHire = `
+        SELECT Hire.EmailPersonInvite,Hire.EmailPersonIsInvited,Hire.ProjectName, users.Img_avt FROM Hire
+        JOIN users ON Hire.EmailPersonIsInvited = users.Email
+        WHERE Hire.EmailPersonInvite = @email
+        AND Hire.EmailPersonIsInvited != @email;
         `;
-        const pool = await poolPromise; // Bạn sai ở đây!
+        const pool = await poolPromise;
         const result = await pool.request()
             .input('email', req.query.email)  // Dùng query thay vì params
-            .query(query);
-
+            .query(queryGetHire);
+        // console.log(result)
         if (result.recordset.length > 0) {
             return res.json({
                 success: true,
@@ -29,14 +28,4 @@ exports.GetInvites = async (req, res) => {
         console.error('Lỗi trong InviteGet:', error);
         res.status(500).json({ success: false, message: 'Server error' });
     }
-};
-exports.AcceptInvite = async(req, res) => {
-    const {AcpStt, email} = req.body;
-    const query = `
-    UPDATE Hire SET AcpStt = @AcpStt WHERE EmailPersonInvite = @email
-    `
-    // const pool = await poolPromise
-    // .input('AcpStt', AcpStt)
-    // .input('email', email)
-    // await pool.request().query(query)
 };
