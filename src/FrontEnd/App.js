@@ -1,5 +1,4 @@
 /* eslint-disable no-unused-vars */
-// import './App.css';
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbars from './Navigation/navbar/NavigationBars';
@@ -8,6 +7,7 @@ import UILogin from './Navigation/navbar/Login/UILogin';
 import Register from './Navigation/navbar/Register/Register';
 import SettingUser from './Navigation/navbar/SettingUser/set';
 import UserProvider from './UserContext';
+import WebSocketProvider from './WebSocketContext';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import Team from './MainPages/Teams/Teams';
@@ -17,6 +17,8 @@ import ManagementTeam from './MainPages/Teams/Team/managemenTeam/Management'
 function App() {
   return (
     <UserProvider>
+      <WebSocketProvider>
+        
       <div className="App">
         <BrowserRouter>
           <Routes>
@@ -30,6 +32,7 @@ function App() {
           </Routes>
         </BrowserRouter>
       </div>
+      </WebSocketProvider>
     </UserProvider>
   );
 }

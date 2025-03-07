@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { UserPlus, Mail, Briefcase, Shield, FolderPlus } from 'lucide-react';
 import axios from 'axios';
 import { useUser } from '../../../../UserContext';
+import { useWebSocket } from '../../../../WebSocketContext';
 
 export default function InviteColleague({ closeStt }) {
     // eslint-disable-next-line no-unused-vars
-    const { user, setUser } = useUser();
+    const { user } = useUser();
     const [formData, setFormData] = useState({
         email: '',
         role: '',
@@ -15,28 +16,27 @@ export default function InviteColleague({ closeStt }) {
         notes: ''
     });
     const [error, setError] = useState('');
-    const [ws, setWs] = useState(null);
+    const { ws,sendMessage } = useWebSocket();
 
     // Khởi tạo WebSocket connection
     useEffect(() => {
-        const socket = new WebSocket('ws://localhost:3001');
+        // const socket = new WebSocket('ws://localhost:3001');
         
-        socket.onopen = () => {
-            // console.log('WebSocket Connected');
-            // Đăng ký user online
-            socket.send(JSON.stringify({ 
-                type: "online", 
-                email: user?.email 
-            }));
-        };
+        // socket.onopen = () => {
+        //     // console.log('WebSocket Connected');
+        //     // Đăng ký user online
+        //     socket.send(JSON.stringify({ 
+        //         type: "online", 
+        //         email: user?.email 
+        //     }));
+        // };
+        // setWs(socket);
 
-        setWs(socket);
-
-        return () => {
-            if (socket) {
-                socket.close();
-            }
-        };
+        // return () => {
+        //     if (socket) {
+        //         socket.close();
+        //     }
+        // };
     }, [user?.email]);
 
     const roles = [
@@ -72,11 +72,11 @@ export default function InviteColleague({ closeStt }) {
         });
         closeStt(false);
     }
-    const fetchInvites = async ()=>{
+    const fetchInvites = async ()=> {
        const PostInvite = await axios.post('http://localhost:3001/invites',
             {
                 email: formData.email,
-                emailIsInvited: user.email,
+                emailInvited: user.email,
                 role: formData.role,
                 jobType: formData.jobType,
                 jobTitles: formData.jobTitles,
@@ -118,18 +118,39 @@ export default function InviteColleague({ closeStt }) {
             
             if (success.success) {
                 // Gửi thông báo qua WebSocket khi invite thành công
-                if (ws) {
-                    ws.send(JSON.stringify({
-                        type: "invite",
-                        to: formData.email,
-                        from: user.email,
-                        projectName: formData.projectName,
-                        role: formData.role,
-                        jobType: formData.jobType,
-                        jobTitles: formData.jobTitles
-                    }));
-                }
-
+                const message = {
+                    type: 'invite',
+                    from: user.email,
+                    to: formData.email,
+                    projectName: formData.projectName,
+                    notes: formData.notes,
+                    role: formData.role,
+                    jobTitles: formData.jobTitles,
+                    jobType: formData.jobType,
+                };
+                console.log("Sending message:", message); // Log the message before sending
+                sendMessage(JSON.stringify({
+                    type: 'invite',
+                    from: user.email,
+                    to: formData.email,
+                    projectName: formData.projectName,
+                    notes: formData.notes,
+                    role: formData.role,
+                    jobTitles: formData.jobTitles,
+                    jobType: formData.jobType,
+                }));
+                
+                // Thông báo kết quả đăng ký thành công
+                setError('');
+                setFormData({
+                    email: '',
+                    role: '',
+                    jobType: '',
+                    jobTitles: '',
+                    projectName: '',
+                    notes: ''
+                });
+                closeStt(false);
                 setError('');
                 setFormData({
                     email: '',
@@ -141,7 +162,8 @@ export default function InviteColleague({ closeStt }) {
                 });
                 closeStt(false);
             } else {
-                setError(success.message);
+                // setError(success.message);
+                console.log(false)
             }
         } catch (err) {
             setError('Failed to send invitation');

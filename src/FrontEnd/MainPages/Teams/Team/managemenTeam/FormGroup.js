@@ -1,34 +1,72 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPeopleGroup } from '@fortawesome/free-solid-svg-icons';
 import { faCircleInfo } from '@fortawesome/free-solid-svg-icons';
-
-const mockColleagues = [
-    { id: 1, name: "Alice Johnson" },
-    { id: 2, name: "Bob Smith" },
-    { id: 3, name: "Charlie Brown" },
-    { id: 4, name: "David Williams" }
-];
+import { useUser } from "../../../../UserContext";
+import { useWebSocket } from "../../../../WebSocketContext";
+import axios from "axios";
 
 const MakeTeamForm = ({ closeStt }) => {
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
-    const [selectedColleagues, setSelectedColleagues] = useState([]);
+    const [selectedColleagues, setSelectedColleagues] = useState([]); // Save colleagues are chosen
+    const [filteredColleagues, setFilteredColleagues] = useState([]);
+    const [mockColleagues, setMockColleagues] = useState([]);
+    const [searchQuery, setSearchQuery] = useState("");
+    const { sendMessage, connectedUsers } = useWebSocket();
+    const { user } = useUser();
+
+    // Lấy dữ liệu từ server tại đây
+    useEffect(() => {
+            const GetMember = async () => {
+                const res = await axios.get('http://localhost:3001/Members')
+                if(res.data.success){
+                    // console.log(res.data.members)
+                    setMockColleagues(res.data.members)
+                }
+            }
+            GetMember();
+            // Socket connection
+    }, [user]);
 
     const handleCheckboxChange = (id) => {
-        setSelectedColleagues((prev) =>
-            prev.includes(id) ? prev.filter((colleagueId) => colleagueId !== id) : [...prev, id]
-        );
+        setSelectedColleagues(
+            selectedColleagues.includes(id)
+                ? selectedColleagues.filter((colleagueId) => colleagueId !== id)
+                : [...selectedColleagues, id]
+        )
     };
-
+    const handleSearch = (e) => {
+        setSearchQuery(e.target.value)
+        let Check = mockColleagues.filter(
+            colleague => colleague.UserName.toLowerCase().includes(e.target.value.toLowerCase())
+        )
+        setFilteredColleagues(Check)
+    }
     const handleSubmit = (e) => {
         e.preventDefault();
-        if(selectedColleagues.length === 0){
-            alert("Please select at least one colleague")
+        if(selectedColleagues.length === 0) {
+            alert("Please choose at least one colleague")
             return;
         }
-        // Thêm logic gửi dữ liệu lên server tại đây
+        const message = {
+            type: 'CreateTeam',
+            team: {
+                from: user?.email,
+                name: name,
+                info: description,
+                members: selectedColleagues,
+            },
+        };
+        // Gửi dữ liệu tới server tại đây
+        console.log("Sending team data:", message);
+        sendMessage(message);
+        // Gọi hàm đóng form tại đây
+        setDescription("")
+        setName("")
+        setSelectedColleagues([])
+        closeStt(false);
     };
     const handleClose = () => {
         // Gọi hàm đóng form tại đây
@@ -39,7 +77,7 @@ const MakeTeamForm = ({ closeStt }) => {
     }
 
     return (
-        <form onSubmit={handleSubmit} className="w-full max-w-md p-6 bg-white rounded-lg shadow-lg">
+        <form className="w-full max-w-md p-6 bg-white rounded-lg shadow-lg">
             <div>
                 <div className="flex justify-end">
                     <button
@@ -51,7 +89,7 @@ const MakeTeamForm = ({ closeStt }) => {
                 </div>
                 <div className="col-12">
                     <label htmlFor="teamName" className="block text-sm font-medium text-gray-700">
-                    <FontAwesomeIcon className="me-1" icon={faPeopleGroup} />
+                        <FontAwesomeIcon className="me-1" icon={faPeopleGroup} />
                         Team Name
                     </label>
                     <input
@@ -62,12 +100,12 @@ const MakeTeamForm = ({ closeStt }) => {
                         placeholder="Enter team name"
                         onChange={e => setName(e.target.value)}
                         required
-                        value={name}/>
+                        value={name} />
                 </div>
 
                 <div>
                     <label htmlFor="teamDescription" className="block text-sm font-medium text-gray-700">
-                    <FontAwesomeIcon className="me-1" icon={faCircleInfo} />
+                        <FontAwesomeIcon className="me-1 mt-2" icon={faCircleInfo} />
                         Description
                     </label>
                     <textarea
@@ -83,24 +121,61 @@ const MakeTeamForm = ({ closeStt }) => {
                 <div>
                     <label className="block text-sm font-medium text-gray-700">Invite Colleagues</label>
                     <div>
-                        <input
-                            type="text"
-                            className="w-full m-1 px-2 py-0 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="Search colleague..."
-                        />
+                        <div className="relative">
+                            <input
+                                type="text"
+                                className="w-full m-1 px-2 py-0 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Search colleague..."
+                                value={searchQuery}
+                                onChange={handleSearch}
+                            />
+                            {/* search suggestions colleagues */}
+                            {   selectedColleagues.length >0 && selectedColleagues.map(
+                                    colleague => (
+                                        <div className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
+                                            {colleague}
+                                        </div>
+                                    )
+                                )
+                            }
+                            {searchQuery && (
+                                <div className="absolute w-full bg-white border border-gray-300 rounded-md mt-1 shadow-lg max-h-48 overflow-y-auto z-10">
+                                    {filteredColleagues.length > 0 ? (
+                                        filteredColleagues.map((colleague) => (
+                                            <div
+                                                key={colleague.EmailColleagues}
+                                                className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                                                onClick={() => {
+                                                    handleCheckboxChange(colleague.EmailColleagues);
+                                                    setSearchQuery('');
+                                                }}
+                                            >
+                                                {colleague.UserName}
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="px-4 py-2 text-gray-500">
+                                            No colleagues found
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                     </div>
+                    {/* List colleagues */}
                     <div className="mt-2 space-y-2">
                         {mockColleagues.map((colleague) => (
-                            <div key={colleague.id} className="flex items-center">
+                            <div key={colleague.EmailColleagues} className="flex items-center">
                                 <input
                                     type="checkbox"
-                                    id={`colleague-${colleague.id}`}
-                                    checked={selectedColleagues.includes(colleague.id)}
-                                    onChange={() => handleCheckboxChange(colleague.id)}
-                                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                    id={`colleague-${colleague.EmailColleagues}`}
+                                    name={`colleague-${colleague.UserName}`}
+                                    checked={selectedColleagues.includes(colleague.EmailColleagues)}
+                                    onChange={() => handleCheckboxChange(colleague.EmailColleagues)}
+                                    className="mr-2 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                 />
-                                <label htmlFor={`colleague-${colleague.id}`} className="ml-2 text-sm text-gray-700">
-                                    {colleague.name}
+                                <label htmlFor={`colleague-${colleague.EmailColleagues}`} className="text-sm text-gray-700">
+                                    {colleague.UserName}
                                 </label>
                             </div>
                         ))}
@@ -110,6 +185,7 @@ const MakeTeamForm = ({ closeStt }) => {
 
             <button
                 type="submit"
+                onClick={handleSubmit}
                 className="flex mt-2 w-full items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
                 <Plus className="mr-2 h-4 w-4" />

@@ -3,10 +3,10 @@ exports.GetInvites = async (req, res) => {
     // console.log(req.query.email)
     try {
         const queryGetHire = `
-        SELECT Hire.EmailPersonInvite,Hire.EmailPersonIsInvited,Hire.ProjectName, users.Img_avt FROM Hire
-        JOIN users ON Hire.EmailPersonIsInvited = users.Email
+        SELECT Hire.EmailPersonInvite,Hire.EmailPersonInvited,Hire.ProjectName, users.Img_avt FROM Hire
+        JOIN users ON Hire.EmailPersonInvited = users.Email
         WHERE Hire.EmailPersonInvite = @email
-        AND Hire.EmailPersonIsInvited != @email;
+        AND Hire.EmailPersonInvited != @email;
         `;
         const pool = await poolPromise;
         const result = await pool.request()
@@ -19,7 +19,7 @@ exports.GetInvites = async (req, res) => {
                 data: result.recordset
             });
         } else {
-            return res.status(404).json({
+            return res.json({
                 success: false,
                 message: 'Not found'
             });

@@ -7,7 +7,8 @@ exports.Invites = async (req, res) => {
         const queryCheckProjectNames = `
         SELECT ProjectName from Hire where EmailPersonInvite = @email
         `
-        const { email, emailIsInvited, role, jobType, jobTitles, notes, projectName } = req.body;
+        const { email, emailInvited, role, jobType, jobTitles, notes, projectName } = req.body;
+        console.log(email)
         const pool = await poolPromise;
         const checkProjectNames = await pool.request()
         .input('email', email)
@@ -20,12 +21,18 @@ exports.Invites = async (req, res) => {
                 })
         }else{
             const InsertHire = `
-            INSERT INTO Hire (EmailPersonInvite, EmailPersonIsInvited, ProjectName, Decentralization, JobTitles, JobTypes, Notes)
-            VALUES (@email, @emailIsInvited, @projectName, @Decentralization, @jobTitles, @jobTypes, @notes)
+           EXEC InsertHire 
+            @EmailPersonInvite = @email, 
+            @EmailPersonInvited = @emailInvited, 
+            @ProjectName = @projectName,
+            @Decentralization = @Decentralization, 
+            @JobTitles = @jobTitles, 
+            @JobTypes = @jobTypes,
+            @Notes = @notes, 
             `
             const params = { 
                 email, 
-                emailIsInvited, 
+                emailInvited, 
                 projectName, 
                 Decentralization: role, 
                 jobTitles, 
@@ -37,8 +44,12 @@ exports.Invites = async (req, res) => {
             Object.entries(params).forEach(([key, value]) => {
                 sqlRequest.input(key, value);
             });
+            // check sqlRequest.input(key, value);
+            console.log(sqlRequest);
+            // console.log(InsertHire);
             const QueryHire = await sqlRequest.query(InsertHire);
             if(QueryHire.rowsAffected > 0){
+                console.log('ok')
                 return res.json({
                     success: true,
                 });
@@ -69,7 +80,7 @@ exports.AcceptInvite = async(req, res) => {
                .query(queryUpdateStt);
                // Check colleagues are existed
             const query = await pool.request().input('email', email).query(queryCheckColleagues);
-            // console.log(query.recordset[0])
+            console.log(query.recordset[0])
             if(query.recordset[0] !== undefined){
                 const UpdateColleagues = `
                 UPDATE colleagues SET StatusWork = 'Active' WHERE EmailColleagues = @email
@@ -105,7 +116,7 @@ exports.AcceptInvite = async(req, res) => {
                     email: TakeEmailInvited.recordset[0].EmailPersonInvite,
                     TypeJob: TakeEmailInvited.recordset[0].JobTypes,
                     JobTitle: TakeEmailInvited.recordset[0].JobTitles,
-                    WhoInvited: TakeEmailInvited.recordset[0].EmailPersonIsInvited
+                    WhoInvited: TakeEmailInvited.recordset[0].EmailPersonInvited
                 }
                 const GetCountry = await pool.request().input('email', InformationsInvite.email)
                 .query(`SELECT CountryID FROM users WHERE Email = @email`)
@@ -121,7 +132,7 @@ exports.AcceptInvite = async(req, res) => {
                 .input('PrjName', ProjectName)
                 .query(
                     `DELETE FROM Hire WHERE ProjectName = @PrjName`)
-                // console.log(false)
+                // // console.log(false)
             }
             if(result.rowsAffected > 0){
                 return res.json({

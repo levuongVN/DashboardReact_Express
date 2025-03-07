@@ -12,7 +12,7 @@ exports.Login = async (req, res) => {
         const result = await pool.request()
             .input('email', email)
             .input('password', password)
-            .query('SELECT * FROM Users WHERE Email = @email OR Phone = @email');
+            .query('SELECT * FROM users WHERE Email = @email OR Phone = @email');
         
         const user = result.recordset[0];
         if (!user || user.pass_word !== password) {

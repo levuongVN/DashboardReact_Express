@@ -12,6 +12,7 @@ const { LogOut } = require('./Login_SignUp_LogOut/Log_out');
 const { Update } = require('./updateInformation/update');
 const { colleagues, GetMembersActive } = require('./Team/Colleagues');
 const { Invites,AcceptInvite } = require('./Team/Invites');
+const { InviteGroup} = require('./Team/InviteGroup');
 const { GetInvites } = require('./Team/getInvites');
 const WebSocket = require("ws"); // Thư viện WebSocket cho Node.js
 const http = require("http"); // Dùng để tạo server HTTP
@@ -64,22 +65,28 @@ wss.on("connection", (ws) => {
     console.log("New client connected");
 
     ws.on('message', (invite) => {
+        let data = JSON.parse(invite);
         try {
-            const data = JSON.parse(invite);
-            // console.log("Received: ", data);
-
+            // console.log("Received message type:", data.type); // Thêm log này
+            // console.log("Full message:",data); // Thêm log này
             if (data.type === "online") {
+                // console.log("User connected:", data.email);
                 UserEmail[data.email] = ws;
                 ws.email = data.email;
-                // console.log(`User ${data.email} registered`);
+                // console.log(true)
             }
             if(data.type === "invite"){
-               const toUserEmail = data.to;
-               if(UserEmail[toUserEmail]){
-                   UserEmail[toUserEmail].send(JSON.stringify(data));
-               }else{
-                   ws.send(JSON.stringify({type: "error", message: "User not found"}));
-               }
+                const toUserEmail = data.to;
+                if(UserEmail[toUserEmail]){ // Check user online
+                    // console.log(true);
+                    UserEmail[toUserEmail].send(JSON.stringify(data));
+                }else{
+                    ws.send(JSON.stringify({type: "error", message: "User not found"}));
+                }
+            }
+            if (data.type === 'CreateTeam') { // Đảm bảo chính xác chuỗi
+                console.log("Creating team:", data.team);
+                // Xử lý logic tạo team ở đây
             }
             if(data.type ==="AcpStt"){
               const toUserEmail = data.to;
@@ -120,15 +127,13 @@ app.post('/users', SignUp);
 
 //Changes informations user
 app.post('/update-informations', upload.single('avatar'), checkAuth, Update);
-// ... existing code ...
 
 app.get('/colleagues', colleagues)
 app.get('/Members', GetMembersActive)
 app.post('/invites',Invites);
 app.get('/InviteGet', GetInvites); 
 app.patch('/Accept-invite', AcceptInvite);
-// ... existing code ...
-
+app.post('/Invite-group', InviteGroup)
 server.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
