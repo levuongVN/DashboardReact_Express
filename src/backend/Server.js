@@ -11,8 +11,8 @@ const { SignUp } = require('./Login_SignUp_LogOut/Sign_up');
 const { LogOut } = require('./Login_SignUp_LogOut/Log_out');
 const { Update } = require('./updateInformation/update');
 const { colleagues, GetMembersActive } = require('./Team/Colleagues');
+const { Team, AddTeamMembers,TeamsInvite } = require('./Team/Team');
 const { Invites,AcceptInvite } = require('./Team/Invites');
-const { InviteGroup} = require('./Team/InviteGroup');
 const { GetInvites } = require('./Team/getInvites');
 const WebSocket = require("ws"); // Thư viện WebSocket cho Node.js
 const http = require("http"); // Dùng để tạo server HTTP
@@ -67,30 +67,33 @@ wss.on("connection", (ws) => {
     ws.on('message', (invite) => {
         let data = JSON.parse(invite);
         try {
-            // console.log("Received message type:", data.type); // Thêm log này
             // console.log("Full message:",data); // Thêm log này
             if (data.type === "online") {
-                // console.log("User connected:", data.email);
                 UserEmail[data.email] = ws;
                 ws.email = data.email;
-                // console.log(true)
             }
             if(data.type === "invite"){
-                const toUserEmail = data.to;
+                const toUserEmail = data.EmailPersonInvite;
                 if(UserEmail[toUserEmail]){ // Check user online
-                    // console.log(true);
                     UserEmail[toUserEmail].send(JSON.stringify(data));
-                }else{
-                    ws.send(JSON.stringify({type: "error", message: "User not found"}));
                 }
             }
-            if (data.type === 'CreateTeam') { // Đảm bảo chính xác chuỗi
-                console.log("Creating team:", data.team);
-                // Xử lý logic tạo team ở đây
+            if (data.type === 'CreateTeam'){ // Đảm bảo chính xác chuỗi
+                const toUserEmail = data.members;
+                 data.team.members.forEach(element => {
+                    console.log(element.id)
+                    if(UserEmail[element.id]){
+                        UserEmail[element.id].send(JSON.stringify(data));
+                    }else{
+                        ws.send(JSON.stringify({type: "error", message: "User not found"}));
+                    }
+                });
+
             }
             if(data.type ==="AcpStt"){
               const toUserEmail = data.to;
-              if(UserEmail[toUserEmail] && data.AcpStt){
+            //   console.log(data)
+              if(UserEmail[toUserEmail]){
                     UserEmail[toUserEmail].send(JSON.stringify(data));
               }else{
                 ws.send(JSON.stringify({type: "error", message: "User not found"}));
@@ -129,11 +132,21 @@ app.post('/users', SignUp);
 app.post('/update-informations', upload.single('avatar'), checkAuth, Update);
 
 app.get('/colleagues', colleagues)
+
 app.get('/Members', GetMembersActive)
+
 app.post('/invites',Invites);
+
 app.get('/InviteGet', GetInvites); 
+
 app.patch('/Accept-invite', AcceptInvite);
-app.post('/Invite-group', InviteGroup)
+
+app.post('/saveTeam', Team);
+
+app.post('/Teams-invite', TeamsInvite);
+
+app.post('/addTeamMembers', AddTeamMembers);
+
 server.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });

@@ -51,9 +51,15 @@ export default function WebSocketProvider({ children }) {
                 dispatch({ type: 'SET_CONNECTED_USERS', payload: data.connectedUsers });
             }
             if (data.type === "invite") {
+                console.log(data)
                 setNotifications(prev => [...prev, data]);
-            } else {
-                console.log(false);
+            }
+            if(data.type === "CreateTeam"){
+                setNotifications(prev => [...prev, data]);
+            }
+            if(data.type === "AcpStt") {
+                console.log(data)
+                setNotifications(prev => [...prev, data]);
             }
         };
 

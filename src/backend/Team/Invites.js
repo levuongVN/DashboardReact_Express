@@ -28,7 +28,7 @@ exports.Invites = async (req, res) => {
             @Decentralization = @Decentralization, 
             @JobTitles = @jobTitles, 
             @JobTypes = @jobTypes,
-            @Notes = @notes, 
+            @Notes = @notes
             `
             const params = { 
                 email, 
@@ -45,11 +45,10 @@ exports.Invites = async (req, res) => {
                 sqlRequest.input(key, value);
             });
             // check sqlRequest.input(key, value);
-            console.log(sqlRequest);
+            // console.log(sqlRequest);
             // console.log(InsertHire);
             const QueryHire = await sqlRequest.query(InsertHire);
             if(QueryHire.rowsAffected > 0){
-                console.log('ok')
                 return res.json({
                     success: true,
                 });
@@ -132,7 +131,7 @@ exports.AcceptInvite = async(req, res) => {
                 .input('PrjName', ProjectName)
                 .query(
                     `DELETE FROM Hire WHERE ProjectName = @PrjName`)
-                // // console.log(false)
+                console.log(false)
             }
             if(result.rowsAffected > 0){
                 return res.json({

@@ -38,7 +38,7 @@ const MemberTable = () => {
                     </tr>
                 </thead>
                 <tbody>
-                    {members.length > 0 ? members.map((item, index) => (
+                    { members && members.length > 0 ? members.map((item, index) => (
                         <tr
                             key={index}
                             className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600"

@@ -118,22 +118,11 @@ export default function InviteColleague({ closeStt }) {
             
             if (success.success) {
                 // Gửi thông báo qua WebSocket khi invite thành công
-                const message = {
-                    type: 'invite',
-                    from: user.email,
-                    to: formData.email,
-                    projectName: formData.projectName,
-                    notes: formData.notes,
-                    role: formData.role,
-                    jobTitles: formData.jobTitles,
-                    jobType: formData.jobType,
-                };
-                console.log("Sending message:", message); // Log the message before sending
                 sendMessage(JSON.stringify({
                     type: 'invite',
-                    from: user.email,
-                    to: formData.email,
-                    projectName: formData.projectName,
+                    EmailPersonInvited: user.email,
+                    EmailPersonInvite: formData.email,
+                    ProjectName: formData.projectName,
                     notes: formData.notes,
                     role: formData.role,
                     jobTitles: formData.jobTitles,

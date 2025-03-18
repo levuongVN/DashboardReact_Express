@@ -1,33 +1,34 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Plus } from "lucide-react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPeopleGroup } from '@fortawesome/free-solid-svg-icons';
 import { faCircleInfo } from '@fortawesome/free-solid-svg-icons';
 import { useUser } from "../../../../UserContext";
 import { useWebSocket } from "../../../../WebSocketContext";
+import SelectRole from './SelectRole';
 import axios from "axios";
+import { ToastContainer, toast } from 'react-toastify'; // Import ToastContainer and toast
+import 'react-toastify/dist/ReactToastify.css';
 
 const MakeTeamForm = ({ closeStt }) => {
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
-    const [selectedColleagues, setSelectedColleagues] = useState([]); // Save colleagues are chosen
+    const [selectedColleagues, setSelectedColleagues] = useState([]);
     const [filteredColleagues, setFilteredColleagues] = useState([]);
     const [mockColleagues, setMockColleagues] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
-    const { sendMessage, connectedUsers } = useWebSocket();
-    const { user } = useUser();
-
-    // Lấy dữ liệu từ server tại đây
-    useEffect(() => {
-            const GetMember = async () => {
-                const res = await axios.get('http://localhost:3001/Members')
-                if(res.data.success){
-                    // console.log(res.data.members)
-                    setMockColleagues(res.data.members)
-                }
+    const [selectedProject, setSelectedProject] = useState(""); // Add this line
+    const rolesRef = useRef({});
+    const { sendMessage } = useWebSocket();
+    const { user } = useUser()
+        useEffect(() => {
+        const GetMember = async () => {
+            const res = await axios.get('http://localhost:3001/Members');
+            if (res.data.success) {
+                setMockColleagues(res.data.members);
             }
-            GetMember();
-            // Socket connection
+        };
+        GetMember();
     }, [user]);
 
     const handleCheckboxChange = (id) => {
@@ -35,58 +36,90 @@ const MakeTeamForm = ({ closeStt }) => {
             selectedColleagues.includes(id)
                 ? selectedColleagues.filter((colleagueId) => colleagueId !== id)
                 : [...selectedColleagues, id]
-        )
+        );
     };
+
     const handleSearch = (e) => {
-        setSearchQuery(e.target.value)
-        let Check = mockColleagues.filter(
+        setSearchQuery(e.target.value);
+        const Check = mockColleagues.filter(
             colleague => colleague.UserName.toLowerCase().includes(e.target.value.toLowerCase())
-        )
-        setFilteredColleagues(Check)
-    }
+        );
+        setFilteredColleagues(Check);
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
-        if(selectedColleagues.length === 0) {
-            alert("Please choose at least one colleague")
+        if (name.length === 0) {
+            toast.error("Please enter team name", { autoClose: 3000 }); // Use toast for notification
+            return;
+        }
+        if (selectedProject === "") {
+            toast.error("Please select a project", { autoClose: 3000 }); // Use toast for notification
+            return;
+        }
+        if (selectedColleagues.length === 0) {
+            toast.error("Please choose at least one colleague", { autoClose: 3000 }); // Use toast for notification
             return;
         }
         const message = {
             type: 'CreateTeam',
             team: {
                 from: user?.email,
-                name: name,
+                name: name, // Team name
                 info: description,
-                members: selectedColleagues,
+                members: selectedColleagues.map(id => ({
+                    id,
+                    role: rolesRef.current[id] || 'Member' // Default role if not set
+                })),
             },
         };
-        // Gửi dữ liệu tới server tại đây
-        console.log("Sending team data:", message);
-        sendMessage(message);
-        // Gọi hàm đóng form tại đây
-        setDescription("")
-        setName("")
-        setSelectedColleagues([])
+        if (name.length > 0 && selectedColleagues.length > 0) {
+            sendMessage(JSON.stringify(message));
+            setDescription("");
+            setName("");
+            setSelectedColleagues([]);
+            PostData(); // Call child function to save data to SQL Server
+            toast.success("Team created successfully", { autoClose: 3000 }); // Use toast for notification
+        }
+    };
+    // post data to save in SQL Server at child function for submit
+    const PostData = async () => {
+        await axios.post('http://localhost:3001/saveTeam', {
+            NameTeam: name,
+            Email: user?.email,
+            Role: 'Admin',
+            ProjectID: selectedProject
+        });
+        await axios.post('http://localhost:3001/Teams-invite',{
+            TeamName: name,
+            Members: selectedColleagues,
+            ProjectID: selectedProject,
+        })
+    };
+    const mockProjects = [
+        { id: 2, name: "AI Research" },
+    ];
+
+    const handleClose = (e) => {
+        e.preventDefault(); // Add this to prevent form submission
+        setDescription("");
+        setName("");
+        setSelectedColleagues([]);
         closeStt(false);
     };
-    const handleClose = () => {
-        // Gọi hàm đóng form tại đây
-        setDescription("")
-        setName("")
-        setSelectedColleagues([])
-        closeStt(false);
-    }
 
     return (
         <form className="w-full max-w-md p-6 bg-white rounded-lg shadow-lg">
+            <ToastContainer />
             <div>
                 <div className="flex justify-end">
-                    <button
-                        onClick={handleClose}
-                        className="flex justify-center rounded-md bg-gray-500 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-sm hover:bg-gray-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
-                    >
+                    <button type="button" onClick={handleClose} className="flex justify-center rounded-md bg-gray-500 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-sm hover:bg-gray-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500">
                         Close
                     </button>
                 </div>
+
+
+                {/* Existing Team Name input */}
                 <div className="col-12">
                     <label htmlFor="teamName" className="block text-sm font-medium text-gray-700">
                         <FontAwesomeIcon className="me-1" icon={faPeopleGroup} />
@@ -99,10 +132,27 @@ const MakeTeamForm = ({ closeStt }) => {
                         class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                         placeholder="Enter team name"
                         onChange={e => setName(e.target.value)}
-                        required
                         value={name} />
                 </div>
-
+                <div className="col-12 mb-1 mt-3">
+                    <label htmlFor="project" className="block text-sm font-medium text-gray-700">
+                        <FontAwesomeIcon className="me-1" icon={faCircleInfo} />
+                        Select Project
+                    </label>
+                    <select
+                        id="project"
+                        value={selectedProject}
+                        onChange={(e) => setSelectedProject(e.target.value)}
+                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    >
+                        <option value="">Select a project</option>
+                        {mockProjects.map((project) => (
+                            <option key={project.id} value={project.id}>
+                                {project.name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
                 <div>
                     <label htmlFor="teamDescription" className="block text-sm font-medium text-gray-700">
                         <FontAwesomeIcon className="me-1 mt-2" icon={faCircleInfo} />
@@ -129,15 +179,22 @@ const MakeTeamForm = ({ closeStt }) => {
                                 value={searchQuery}
                                 onChange={handleSearch}
                             />
-                            {/* search suggestions colleagues */}
-                            {   selectedColleagues.length >0 && selectedColleagues.map(
-                                    colleague => (
-                                        <div className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
+                            {selectedColleagues.length > 0 && selectedColleagues.map(
+                                colleague => (
+                                    <div key={colleague} className="px-4 py-2 hover:bg-gray-100 row">
+                                        <div className="col">
                                             {colleague}
                                         </div>
-                                    )
+                                        <div className="col border-start">
+                                            <SelectRole
+                                                selectedCountry={(role) => {
+                                                    rolesRef.current[colleague] = role;
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
                                 )
-                            }
+                            )}
                             {searchQuery && (
                                 <div className="absolute w-full bg-white border border-gray-300 rounded-md mt-1 shadow-lg max-h-48 overflow-y-auto z-10">
                                     {filteredColleagues.length > 0 ? (

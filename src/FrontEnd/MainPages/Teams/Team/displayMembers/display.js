@@ -14,7 +14,6 @@ import Hire from '../hireMember/hire'
 import axios from "axios";
 import { useUser } from "../../../../UserContext";
 function createData(Person, Emails, Country, Start_Date, Type, Job_Title, Status) {
-    // console.log(Status)
     return { Person, Emails, Country, Start_Date, Type, Job_Title, Status };
 }
 const rowsMember = [];
@@ -42,7 +41,6 @@ export default function Display() {
                     }
                 );
                 const data = res.data;
-                // console.log(data)
                 if (data.success) {
                     setCount(data.colleagues.length);
                     const RowsFetched = data.colleagues.map(item =>
