@@ -12,13 +12,14 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import Team from './MainPages/Teams/Teams';
 import ManagementTeam from './MainPages/Teams/Team/managemenTeam/Management'
+import  ProjectsProvider from './ProjectsContext';
 
 
 function App() {
   return (
     <UserProvider>
       <WebSocketProvider>
-        
+      <ProjectsProvider>
       <div className="App">
         <BrowserRouter>
           <Routes>
@@ -32,6 +33,7 @@ function App() {
           </Routes>
         </BrowserRouter>
       </div>
+      </ProjectsProvider>
       </WebSocketProvider>
     </UserProvider>
   );

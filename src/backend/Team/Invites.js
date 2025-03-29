@@ -8,7 +8,7 @@ exports.Invites = async (req, res) => {
         SELECT ProjectName from Hire where EmailPersonInvite = @email
         `
         const { email, emailInvited, role, jobType, jobTitles, notes, projectName } = req.body;
-        console.log(email)
+        // console.log(email)
         const pool = await poolPromise;
         const checkProjectNames = await pool.request()
         .input('email', email)
@@ -45,8 +45,6 @@ exports.Invites = async (req, res) => {
                 sqlRequest.input(key, value);
             });
             // check sqlRequest.input(key, value);
-            // console.log(sqlRequest);
-            // console.log(InsertHire);
             const QueryHire = await sqlRequest.query(InsertHire);
             if(QueryHire.rowsAffected > 0){
                 return res.json({
@@ -79,7 +77,7 @@ exports.AcceptInvite = async(req, res) => {
                .query(queryUpdateStt);
                // Check colleagues are existed
             const query = await pool.request().input('email', email).query(queryCheckColleagues);
-            console.log(query.recordset[0])
+            // console.log(query.recordset[0])
             if(query.recordset[0] !== undefined){
                 const UpdateColleagues = `
                 UPDATE colleagues SET StatusWork = 'Active' WHERE EmailColleagues = @email
@@ -89,7 +87,7 @@ exports.AcceptInvite = async(req, res) => {
                 .input('PrjName', ProjectName)
                 .query(
                     `DELETE FROM Hire WHERE ProjectName = @PrjName`)
-                console.log(true)
+                // console.log(true)
                 if(resultColleagues.rowsAffected > 0){
                     return res.json({
                         success: true,
@@ -131,7 +129,7 @@ exports.AcceptInvite = async(req, res) => {
                 .input('PrjName', ProjectName)
                 .query(
                     `DELETE FROM Hire WHERE ProjectName = @PrjName`)
-                console.log(false)
+                // console.log(false)
             }
             if(result.rowsAffected > 0){
                 return res.json({

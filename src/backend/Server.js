@@ -11,9 +11,10 @@ const { SignUp } = require('./Login_SignUp_LogOut/Sign_up');
 const { LogOut } = require('./Login_SignUp_LogOut/Log_out');
 const { Update } = require('./updateInformation/update');
 const { colleagues, GetMembersActive } = require('./Team/Colleagues');
-const { Team, AddTeamMembers,TeamsInvite } = require('./Team/Team');
+const { Team, AddTeamMembers,TeamsInvite,GetInviteTeam } = require('./Team/Team');
 const { Invites,AcceptInvite } = require('./Team/Invites');
 const { GetInvites } = require('./Team/getInvites');
+const {Projects } = require('./Projects/Projects')
 const WebSocket = require("ws"); // Thư viện WebSocket cho Node.js
 const http = require("http"); // Dùng để tạo server HTTP
 const app = express();
@@ -79,20 +80,17 @@ wss.on("connection", (ws) => {
                 }
             }
             if (data.type === 'CreateTeam'){ // Đảm bảo chính xác chuỗi
-                const toUserEmail = data.members;
                  data.team.members.forEach(element => {
-                    console.log(element.id)
+                    // console.log(element.id)
                     if(UserEmail[element.id]){
                         UserEmail[element.id].send(JSON.stringify(data));
                     }else{
                         ws.send(JSON.stringify({type: "error", message: "User not found"}));
                     }
                 });
-
             }
             if(data.type ==="AcpStt"){
               const toUserEmail = data.to;
-            //   console.log(data)
               if(UserEmail[toUserEmail]){
                     UserEmail[toUserEmail].send(JSON.stringify(data));
               }else{
@@ -145,8 +143,11 @@ app.post('/saveTeam', Team);
 
 app.post('/Teams-invite', TeamsInvite);
 
-app.post('/addTeamMembers', AddTeamMembers);
+app.get('/get-invite-team', GetInviteTeam);
 
+app.patch('/add-team-members', AddTeamMembers);
+
+app.get('/projects', Projects)
 server.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });

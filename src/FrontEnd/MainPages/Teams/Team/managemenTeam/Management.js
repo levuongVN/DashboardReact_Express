@@ -2,7 +2,7 @@ import { UserX } from 'lucide-react';
 import TreeContent from '../../TreeContent';
 import Navbar from '../../../../Navigation/navbar/NavigationBars';
 import MemberTable from './TableMembers/Member';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Hire from '../hireMember/hire'
 import MakeGroup from '../managemenTeam/MakeGroup'
 import  FormGroup  from '../managemenTeam/FormGroup';

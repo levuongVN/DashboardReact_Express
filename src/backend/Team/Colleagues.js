@@ -24,6 +24,7 @@ exports.colleagues = async (req, res) => {
         const resultCountAll = await pool.request().query(CountAll);
         // console.log(resultCountStt.recordset)
         // console.log(resultCountAll.recordset)
+        // console.log(result.recordset[0])
         if(result.recordset.length === 0){
             return res.status(404).json({
                 success: false,
@@ -38,7 +39,6 @@ exports.colleagues = async (req, res) => {
                 countAll: resultCountAll.recordset,
             });
         }
-        // console.log('Received email:', req.query.email);
 };
 
 exports.GetMembersActive = async (req, res) => {

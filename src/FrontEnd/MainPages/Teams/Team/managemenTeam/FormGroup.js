@@ -5,6 +5,7 @@ import { faPeopleGroup } from '@fortawesome/free-solid-svg-icons';
 import { faCircleInfo } from '@fortawesome/free-solid-svg-icons';
 import { useUser } from "../../../../UserContext";
 import { useWebSocket } from "../../../../WebSocketContext";
+import { useProjects } from '../../../../ProjectsContext';
 import SelectRole from './SelectRole';
 import axios from "axios";
 import { ToastContainer, toast } from 'react-toastify'; // Import ToastContainer and toast
@@ -20,8 +21,17 @@ const MakeTeamForm = ({ closeStt }) => {
     const [selectedProject, setSelectedProject] = useState(""); // Add this line
     const rolesRef = useRef({});
     const { sendMessage } = useWebSocket();
-    const { user } = useUser()
-        useEffect(() => {
+    const { user } = useUser();
+    const { projects } = useProjects();
+    const [availableProjects, setAvailableProjects] = useState([]);
+
+    useEffect(() => {
+        if (projects && projects.data && projects.data.length !== 0) {
+            setAvailableProjects(projects.data);
+        }
+    }, [projects]);
+
+    useEffect(() => {
         const GetMember = async () => {
             const res = await axios.get('http://localhost:3001/Members');
             if (res.data.success) {
@@ -32,6 +42,14 @@ const MakeTeamForm = ({ closeStt }) => {
     }, [user]);
 
     const handleCheckboxChange = (id) => {
+        if (!selectedColleagues.includes(id)) {
+            // Khi thêm mới một colleague, set role mặc định là Member
+            rolesRef.current[id] = 'Member';
+        } else {
+            // Khi bỏ chọn một colleague, xóa role của họ
+            delete rolesRef.current[id];
+        }
+        
         setSelectedColleagues(
             selectedColleagues.includes(id)
                 ? selectedColleagues.filter((colleagueId) => colleagueId !== id)
@@ -84,21 +102,23 @@ const MakeTeamForm = ({ closeStt }) => {
     };
     // post data to save in SQL Server at child function for submit
     const PostData = async () => {
-        await axios.post('http://localhost:3001/saveTeam', {
+        const ResSave = await axios.post('http://localhost:3001/saveTeam', {
             NameTeam: name,
             Email: user?.email,
             Role: 'Admin',
             ProjectID: selectedProject
         });
-        await axios.post('http://localhost:3001/Teams-invite',{
-            TeamName: name,
-            Members: selectedColleagues,
-            ProjectID: selectedProject,
-        })
+        if (ResSave.data.success === true) {
+            await axios.post('http://localhost:3001/Teams-invite', {
+                TeamName: name,
+                SenderEmail: user?.email,
+                ReceiverEmail: selectedColleagues,
+                Status: 'Pending',
+                ProjectID: selectedProject,
+                Role: rolesRef.current[selectedColleagues]
+            },{ withCredentials: true })
+        }
     };
-    const mockProjects = [
-        { id: 2, name: "AI Research" },
-    ];
 
     const handleClose = (e) => {
         e.preventDefault(); // Add this to prevent form submission
@@ -129,7 +149,7 @@ const MakeTeamForm = ({ closeStt }) => {
                         type="text"
                         id="teamName"
                         name="teamName"
-                        class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                         placeholder="Enter team name"
                         onChange={e => setName(e.target.value)}
                         value={name} />
@@ -139,6 +159,7 @@ const MakeTeamForm = ({ closeStt }) => {
                         <FontAwesomeIcon className="me-1" icon={faCircleInfo} />
                         Select Project
                     </label>
+                    {/* // Trong phần render của select box, thay mockProjects bằng availableProjects */}
                     <select
                         id="project"
                         value={selectedProject}
@@ -146,9 +167,9 @@ const MakeTeamForm = ({ closeStt }) => {
                         className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                     >
                         <option value="">Select a project</option>
-                        {mockProjects.map((project) => (
-                            <option key={project.id} value={project.id}>
-                                {project.name}
+                        {availableProjects.map((project) => (
+                            <option key={project.ProjectID} value={project.ProjectID}>
+                                {project.ProjectName}
                             </option>
                         ))}
                     </select>
@@ -187,8 +208,9 @@ const MakeTeamForm = ({ closeStt }) => {
                                         </div>
                                         <div className="col border-start">
                                             <SelectRole
-                                                selectedCountry={(role) => {
+                                                selectedRole={(role) => {
                                                     rolesRef.current[colleague] = role;
+                                                    console.log('Updated roles:', rolesRef.current);
                                                 }}
                                             />
                                         </div>
