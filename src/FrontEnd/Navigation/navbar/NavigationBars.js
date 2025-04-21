@@ -11,7 +11,7 @@ import { flatMap } from 'lodash';
 
 const navigation = [
     { name: 'Dashboard', to: '/', current: true },
-    { name: 'Team', to: ['/Team', '/Team/Management'], current: false },
+    { name: 'Team', to: ['/Team', '/Team/Management','/Team/Management/Team-Detail'], current: false },
     { name: 'Projects', to: 'Projects', current: false },
     { name: 'Calendar', to: '/Calendar', current: false },
     { name: "Todo List", to: '/Todo', current: false },

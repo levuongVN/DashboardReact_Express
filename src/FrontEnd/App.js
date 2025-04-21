@@ -13,6 +13,7 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import Team from './MainPages/Teams/Teams';
 import ManagementTeam from './MainPages/Teams/Team/managemenTeam/Management'
 import  ProjectsProvider from './ProjectsContext';
+import TeamDetails from './MainPages/Teams/Team/managemenTeam/TeamDetail';
 
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
             <Route path="/Setting" element={<SettingUser />} />
             <Route path="/Team" element={<Team />} />
             <Route path="/Team/Management" element={<ManagementTeam />} />
+            <Route path="/Team/Management/Team-Detail/:TeamID" element={<TeamDetails />} />
           </Routes>
         </BrowserRouter>
       </div>

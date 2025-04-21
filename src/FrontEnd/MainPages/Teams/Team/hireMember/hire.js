@@ -3,42 +3,33 @@ import { UserPlus, Mail, Briefcase, Shield, FolderPlus } from 'lucide-react';
 import axios from 'axios';
 import { useUser } from '../../../../UserContext';
 import { useWebSocket } from '../../../../WebSocketContext';
+// Add this import at the top
+import { useProjects } from '../../../../ProjectsContext';
 
+// Modify the component to use projects from context
 export default function InviteColleague({ closeStt }) {
-    // eslint-disable-next-line no-unused-vars
     const { user } = useUser();
+    const { projects } = useProjects(); // Get projects from context
+    const [selectedProject, setSelectedProject] = useState(null);
     const [formData, setFormData] = useState({
         email: '',
         role: '',
         jobType: '',
         jobTitles: '',
-        projectName: '',
+        projectId: '',
         notes: ''
     });
     const [error, setError] = useState('');
-    const { ws,sendMessage } = useWebSocket();
-
-    // Khởi tạo WebSocket connection
-    useEffect(() => {
-        // const socket = new WebSocket('ws://localhost:3001');
+    const [searchTerm, setSearchTerm] = useState('');
+    const { ws, sendMessage } = useWebSocket();
+    // Fix the projects filtering logic
+    const filteredProjects = projects && typeof projects === 'object'
+        ? Object.values(projects).filter(project => 
+            project?.ProjectName?.toLowerCase().includes(searchTerm.toLowerCase())
+          )
+        :[];
         
-        // socket.onopen = () => {
-        //     // console.log('WebSocket Connected');
-        //     // Đăng ký user online
-        //     socket.send(JSON.stringify({ 
-        //         type: "online", 
-        //         email: user?.email 
-        //     }));
-        // };
-        // setWs(socket);
-
-        // return () => {
-        //     if (socket) {
-        //         socket.close();
-        //     }
-        // };
-    }, [user?.email]);
-
+    // Update the useEffect to debug projects type
     const roles = [
         { id: 'admin', label: 'Administrator' },
         { id: 'editor', label: 'Editor' },
@@ -92,8 +83,8 @@ export default function InviteColleague({ closeStt }) {
     }
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!formData.projectName.trim()) {
-            setError('Please enter project name');
+        if (!formData.projectId) { // Changed validation from projectName to projectId
+            setError('Please select a project');
             return;
         }
         if (!validateEmail(formData.email)) {
@@ -159,6 +150,19 @@ export default function InviteColleague({ closeStt }) {
             console.error(err);
         }
     };
+    // Add this state for tracking selected project    
+    // Modify the project selection handler
+    const handleProjectSelect = (project) => {
+        setSelectedProject(project);
+        setFormData({
+            ...formData,
+            projectId: project.ProjectID,
+            projectName: project.ProjectName
+        });
+        setSearchTerm(''); // Clear search term after selection
+    };
+    
+    // Update the project search section in the return statement
     return (
         <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-lg">
             <div className="flex col">
@@ -181,18 +185,63 @@ export default function InviteColleague({ closeStt }) {
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Project Name
+                        Select Project
                     </label>
-                    <div className="relative d-flex">
-                        <FolderPlus className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                        <input
-                            type="text"
-                            value={formData.projectName}
-                            onChange={(e) => setFormData({ ...formData, projectName: e.target.value })}
-                            className="pl-12 w-full border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="Enter project name"
-                        />
-                    </div>
+                    {selectedProject ? (
+                        <div className="p-3 border border-gray-300 rounded-md bg-gray-50">
+                            <div className="flex justify-between items-center">
+                                <span className="font-medium">{selectedProject.ProjectName}</span>
+                                <button 
+                                    type="button" 
+                                    onClick={() => {
+                                        setSelectedProject(null);
+                                        setFormData({...formData, projectId: '', projectName: ''});
+                                    }}
+                                    className="text-red-500 hover:text-red-700"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="relative">
+                                <FolderPlus className="absolute left-3 top-5 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                                <input
+                                    type="text"
+                                    value={searchTerm}  // Changed from selectedProject to searchTerm
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="pl-12 w-full border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="Search projects..."
+                                />
+                            </div>
+                            {searchTerm && (
+                                <div className="mt-2 max-h-60 overflow-y-auto border border-gray-200 rounded-md">
+                                    {filteredProjects.length > 0 ? (
+                                        filteredProjects.map(project => (
+                                            <div 
+                                                key={project.ProjectID}
+                                                className="p-2 hover:bg-gray-100 cursor-pointer"
+                                                onClick={() => handleProjectSelect(project)}
+                                            >
+                                                {project.ProjectName}
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="p-2 text-gray-500">
+                                            No matching projects found
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </>
+                    )}
+                    {error && !formData.projectId && (
+                        <p className="mt-1 text-sm text-red-600">Please select a project</p>
+                    )}
                 </div>
 
                 <div>

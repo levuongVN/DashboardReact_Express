@@ -26,20 +26,25 @@ const MakeTeamForm = ({ closeStt }) => {
     const [availableProjects, setAvailableProjects] = useState([]);
 
     useEffect(() => {
-        if (projects && projects.data && projects.data.length !== 0) {
-            setAvailableProjects(projects.data);
+        if (projects){
+            // console.log(projects)
+            setAvailableProjects(projects);
         }
     }, [projects]);
-
+    // console.log(availableProjects);
     useEffect(() => {
         const GetMember = async () => {
-            const res = await axios.get('http://localhost:3001/Members');
+            const res = await axios.get('http://localhost:3001/Members',{
+                params: { email: user?.email },
+                withCredentials: true
+            });
             if (res.data.success) {
                 setMockColleagues(res.data.members);
             }
         };
         GetMember();
     }, [user]);
+    // console.log(mockColleagues);
 
     const handleCheckboxChange = (id) => {
         if (!selectedColleagues.includes(id)) {
@@ -109,7 +114,7 @@ const MakeTeamForm = ({ closeStt }) => {
             ProjectID: selectedProject
         });
         if (ResSave.data.success === true) {
-            await axios.post('http://localhost:3001/Teams-invite', {
+            const resPostInvite = await axios.post('http://localhost:3001/Teams-invite', {
                 TeamName: name,
                 SenderEmail: user?.email,
                 ReceiverEmail: selectedColleagues,
@@ -117,6 +122,7 @@ const MakeTeamForm = ({ closeStt }) => {
                 ProjectID: selectedProject,
                 Role: rolesRef.current[selectedColleagues]
             },{ withCredentials: true })
+            console.log(resPostInvite)
         }
     };
 

@@ -13,6 +13,7 @@ import { useState } from "react";
 import Hire from '../hireMember/hire'
 import axios from "axios";
 import { useUser } from "../../../../UserContext";
+import { useProjects } from "../../../../ProjectsContext";
 function createData(Person, Emails, Country, Start_Date, Type, Job_Title, Status) {
     return { Person, Emails, Country, Start_Date, Type, Job_Title, Status };
 }
@@ -20,6 +21,7 @@ const rowsMember = [];
 
 export default function Display() {
     const { user, setUser } = useUser();
+    const { projects } = useProjects(); // Get projects from context
     const [dataColleagues, setDataColleagues] = useState([]);
     const [count, setCount] = useState(0);
     const [hireOpen, setHireOpen] = useState(null);
@@ -63,7 +65,6 @@ export default function Display() {
             console.error("Error fetching colleagues:", error);
         }
     }
-    // ... existing code ...
     useEffect(() => {
         fetchColleagues(statusWork);
     }, [user]);

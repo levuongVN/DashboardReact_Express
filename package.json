@@ -39,7 +39,7 @@
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.0.1",
     "react-scripts": "5.0.1",
-    "react-toastify": "^11.0.3",
+    "react-toastify": "^11.0.5",
     "sass": "^1.81.1",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
@@ -52,7 +52,8 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "scss": "sass --watch scss/custum.scss src/FrontEnd/Navigation/navbar/custom.css",
-    "tailwindcss": "npx tailwindcss -i ./src/input.css -o ./src/output.css --watch"
+    "tailwindcss": "npx tailwindcss -i ./src/input.css -o ./src/output.css --watch",
+    "server": "nodemon --inspect /Users/vuongle/ImportanDocuments/todo_list/src/backend/server.js"
   },
   "eslintConfig": {
     "extends": [

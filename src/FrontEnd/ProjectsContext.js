@@ -17,8 +17,8 @@ export default function ProjectsProvider ({ children }) {
                     params: { Manager: user?.email },
                     withCredentials: true
                 });
-                // console.log(res);  // log the fetched projects to the console for testing purposes
-                setProjects(res.data);
+                // console.log(res.data.data);  // log the fetched projects to the console for testing purposes
+                setProjects(res.data.data);
             };
             Fetch();
         }

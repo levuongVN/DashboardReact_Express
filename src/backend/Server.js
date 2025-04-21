@@ -10,8 +10,8 @@ const { Login, CheckAuth } = require('./Login_SignUp_LogOut/Login');
 const { SignUp } = require('./Login_SignUp_LogOut/Sign_up');
 const { LogOut } = require('./Login_SignUp_LogOut/Log_out');
 const { Update } = require('./updateInformation/update');
-const { colleagues, GetMembersActive } = require('./Team/Colleagues');
-const { Team, AddTeamMembers,TeamsInvite,GetInviteTeam } = require('./Team/Team');
+const { colleagues, GetMembersActive, DeleteColleague } = require('./Team/Colleagues');
+const { Team, AddTeamMembers, TeamsInvite, GetInviteTeam, GetTeam, GetTeamDetails, UpdateTeamDetails, DeleteTeam } = require('./Team/Team');
 const { Invites,AcceptInvite } = require('./Team/Invites');
 const { GetInvites } = require('./Team/getInvites');
 const {Projects } = require('./Projects/Projects')
@@ -148,6 +148,18 @@ app.get('/get-invite-team', GetInviteTeam);
 app.patch('/add-team-members', AddTeamMembers);
 
 app.get('/projects', Projects)
+
+app.get('/get-teams',GetTeam)
+
+app.delete('/Members', checkAuth, DeleteColleague);
+
+app.get('/get-team-details', GetTeamDetails)
+// Add the new endpoint
+app.post('/update-team-details', checkAuth, UpdateTeamDetails);
+
+// Add the delete team endpoint
+app.delete('/delete-team', checkAuth, DeleteTeam);
+
 server.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });

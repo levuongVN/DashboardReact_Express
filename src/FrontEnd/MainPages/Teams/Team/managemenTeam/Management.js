@@ -4,7 +4,7 @@ import Navbar from '../../../../Navigation/navbar/NavigationBars';
 import MemberTable from './TableMembers/Member';
 import { useEffect, useState } from 'react';
 import Hire from '../hireMember/hire'
-import MakeGroup from '../managemenTeam/MakeGroup'
+import MakeGroup from './Team_display'
 import  FormGroup  from '../managemenTeam/FormGroup';
 
 const TeamMember = ({ name, position, imageUrl }) => {

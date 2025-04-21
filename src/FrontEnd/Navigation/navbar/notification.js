@@ -30,16 +30,18 @@ export default function NotificationDropdown() {
                 });
 
                 if (response.data.success) {
-                    setNotifications([response.data.data]);
+                    setNotifications(response.data.data);
+                    TypeNoti.current = "InviteColleagues";
                 }
                 if (response2.data.success) {
-                    setNotifications([response2.data.data]);
+                    setNotifications(response2.data.data);
                     TypeNoti.current = "InviteTeam";
                 }
             };
             FetchNotification();
         }
     }, [user, setNotifications, TypeNoti]);
+    // console.log(notifications)
     // Update GetAcpStt function
     async function GetAcpStt(Stt, EmailPersonIsInvited, ProjectName,Type, RoleMem) {
         try {
@@ -174,12 +176,12 @@ export default function NotificationDropdown() {
                                                     <div className="">
                                                         "{item.from}" accepted the invitation for the "{item.ProjectName}" project.
                                                     </div>
-                                                ): TypeNoti.current === 'InviteTeam' && item[index].ReceiverEmail === user?.email ? (
+                                                ) : TypeNoti.current === 'InviteTeam' && item.ReceiverEmail === user?.email ? (
                                                     <>
-                                                        You were invited by '{item[index].SenderEmail}' to join team '{item[index].TeamName}'
+                                                        You were invited by '{item.SenderEmail}' to join team '{item.TeamName}'
                                                         <div className="flex mt-1 items-center justify-center text-gray-500 dark:text-gray-400 pb-2">
                                                             <button
-                                                                onClick={(e) => GetAcpStt(true,item[index].SenderEmail ,item[index].TeamName, 'CreateTeam', item[index].Role)}
+                                                                onClick={(e) => GetAcpStt(true, item.SenderEmail, item.TeamName, 'CreateTeam', item.Role)}
                                                                 name="Acp"
                                                                 className="bg-blue-500 text-white px-4 py-1 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 mr-2"
                                                             >
@@ -187,7 +189,7 @@ export default function NotificationDropdown() {
                                                             </button>
                                                             <button
                                                                 id="Rj"
-                                                                onClick={(e) => GetAcpStt(false, item[index].SenderEmail, item[index].TeamName, 'CreateTeam',item[index].Role)}
+                                                                onClick={(e) => GetAcpStt(false, item.SenderEmail, item.TeamName, 'CreateTeam', item.Role)}
                                                                 className="bg-red-500 text-white px-4 py-1 rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400"
                                                             >
                                                                 Reject
